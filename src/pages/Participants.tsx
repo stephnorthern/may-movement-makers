@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trophy, Activity, Clock } from "lucide-react";
+import { Plus, Trophy, Activity, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const Participants = () => {

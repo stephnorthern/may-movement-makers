@@ -11,7 +11,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, Clock, Calendar, Plus } from "lucide-react";
+import { Trophy, Clock, Calendar, Plus, Activity as ActivityIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
@@ -175,7 +175,7 @@ const Dashboard = () => {
               {recentActivities.map((activity) => (
                 <div key={activity.id} className="flex items-start gap-4 p-3 rounded-lg bg-gray-50">
                   <div className="w-10 h-10 rounded-full bg-movement-purple/10 flex items-center justify-center text-movement-purple">
-                    <Activity className="h-5 w-5" />
+                    <ActivityIcon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between">
