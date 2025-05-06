@@ -1,7 +1,6 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Activity } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -36,6 +36,15 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const { signIn, signUp, user, loading } = useAuth();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+
+  useEffect(() => {
+    // Show a message if user was redirected here
+    if (location.state?.from) {
+      toast.info("Please sign in to access the application");
+    }
+  }, [location.state]);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -58,6 +67,7 @@ const Auth = () => {
   const handleLoginSubmit = async (values: LoginFormValues) => {
     try {
       await signIn(values.email, values.password);
+      toast.success("Successfully signed in");
     } catch (error) {
       console.error("Login error:", error);
     }
@@ -73,7 +83,7 @@ const Auth = () => {
 
   // Redirect if user is already authenticated
   if (user && !loading) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={from} replace />;
   }
 
   return (

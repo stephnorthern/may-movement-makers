@@ -33,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           toast.success('Successfully signed in');
         } else if (event === 'SIGNED_OUT') {
           toast.info('Signed out');
+          navigate('/auth');
         }
       }
     );
@@ -90,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      navigate('/auth');
+      // Navigation will be handled by the auth state change listener
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign out');
     }

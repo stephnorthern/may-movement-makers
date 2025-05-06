@@ -1,15 +1,23 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { Calendar, Trophy, Users, Activity, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/sonner";
 
 const MainLayout = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      // Force redirect if not authenticated
+      toast.error("Please sign in to access the application");
+    }
+  }, [user, loading]);
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: <Trophy className="h-5 w-5" /> },
@@ -21,7 +29,7 @@ const MainLayout = () => {
 
   // Redirect to auth page if user is not authenticated
   if (!loading && !user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/auth" replace state={{ from: location }} />;
   }
 
   return (
