@@ -4,6 +4,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
+import { handleApiError } from '@/utils/errorHandling';
 
 type UserRole = 'admin' | 'user' | null;
 
@@ -41,13 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       //   .single();
       
       // if (error) {
-      //   console.error('Error fetching user role:', error);
+      //   handleApiError(error);
       //   setRole('user'); // Default role
       // } else if (data) {
       //   setRole(data.role as UserRole);
       // }
     } catch (error) {
-      console.error('Error in fetchUserRole:', error);
+      handleApiError(error);
       setRole('user'); // Default to user role
     }
   };
@@ -75,7 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // THEN check for existing session
     const initializeAuth = async () => {
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw error;
+        }
+        
         setSession(currentSession);
         
         const currentUser = currentSession?.user ?? null;
@@ -85,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await fetchUserRole(currentUser.id);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        handleApiError(error);
       } finally {
         setLoading(false);
       }
@@ -97,20 +103,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
+    const toastId = toast.loading('Signing in...');
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      toast.dismiss(toastId);
       navigate('/');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in');
-      throw error;
+      toast.dismiss(toastId);
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, name: string) => {
+    const toastId = toast.loading('Creating your account...');
     setLoading(true);
     try {
       const { error } = await supabase.auth.signUp({ 
@@ -123,26 +132,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
         },
       });
+      
       if (error) throw error;
+      
+      toast.dismiss(toastId);
       toast.success('Sign up successful. Please check your email to confirm your account.', {
         duration: 6000,
       });
       navigate('/auth');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign up');
-      throw error;
+      toast.dismiss(toastId);
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
   };
 
   const signOut = async () => {
+    const toastId = toast.loading('Signing out...');
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      toast.dismiss(toastId);
       // Navigation will be handled by the auth state change listener
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign out');
+      toast.dismiss(toastId);
+      handleApiError(error);
     }
   };
 
