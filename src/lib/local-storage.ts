@@ -1,6 +1,7 @@
 
 import { Participant, Activity, Team } from "@/types";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const PARTICIPANTS_KEY = "may-movement-participants";
 const ACTIVITIES_KEY = "may-movement-activities";
@@ -125,53 +126,252 @@ export const deleteTeam = (id: string): void => {
 };
 
 // Activity Methods
-export const getActivities = (): Activity[] => {
-  const data = localStorage.getItem(ACTIVITIES_KEY);
-  return data ? JSON.parse(data) : [];
+export const getActivities = async (): Promise<Activity[]> => {
+  try {
+    // First, try to get from Supabase
+    const { data: supabaseActivities, error } = await supabase
+      .from('activities')
+      .select(`
+        id,
+        type,
+        minutes,
+        date,
+        notes,
+        points,
+        participant_id,
+        participants (name)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching from Supabase:", error);
+      // Fall back to local storage
+      const localData = localStorage.getItem(ACTIVITIES_KEY);
+      return localData ? JSON.parse(localData) : [];
+    }
+
+    // Map Supabase data to our Activity type
+    return supabaseActivities.map(a => ({
+      id: a.id,
+      participantId: a.participant_id,
+      participantName: a.participants?.name || "Unknown",
+      type: a.type,
+      minutes: a.minutes,
+      points: a.points,
+      date: a.date,
+      notes: a.notes || undefined
+    }));
+  } catch (e) {
+    console.error("Error in getActivities:", e);
+    // Fall back to local storage
+    const localData = localStorage.getItem(ACTIVITIES_KEY);
+    return localData ? JSON.parse(localData) : [];
+  }
 };
 
-export const getParticipantActivities = (participantId: string): Activity[] => {
-  const activities = getActivities();
-  return activities.filter(activity => activity.participantId === participantId);
+export const getParticipantActivities = async (participantId: string): Promise<Activity[]> => {
+  try {
+    // Try to get from Supabase
+    const { data: supabaseActivities, error } = await supabase
+      .from('activities')
+      .select(`
+        id,
+        type,
+        minutes,
+        date,
+        notes,
+        points,
+        participant_id,
+        participants (name)
+      `)
+      .eq('participant_id', participantId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching from Supabase:", error);
+      // Fall back to local storage
+      const activities = localStorage.getItem(ACTIVITIES_KEY);
+      const parsedActivities = activities ? JSON.parse(activities) : [];
+      return parsedActivities.filter(activity => activity.participantId === participantId);
+    }
+
+    // Map Supabase data to our Activity type
+    return supabaseActivities.map(a => ({
+      id: a.id,
+      participantId: a.participant_id,
+      participantName: a.participants?.name || "Unknown",
+      type: a.type,
+      minutes: a.minutes,
+      points: a.points,
+      date: a.date,
+      notes: a.notes || undefined
+    }));
+  } catch (e) {
+    console.error("Error in getParticipantActivities:", e);
+    // Fall back to local storage
+    const activities = localStorage.getItem(ACTIVITIES_KEY);
+    const parsedActivities = activities ? JSON.parse(activities) : [];
+    return parsedActivities.filter(activity => activity.participantId === participantId);
+  }
 };
 
-export const addActivity = (activity: Omit<Activity, "id" | "points">): void => {
-  const activities = getActivities();
+export const addActivity = async (activity: Omit<Activity, "id" | "points">): Promise<void> => {
   const points = calculatePoints(activity.minutes);
   
-  const newActivity: Activity = {
-    ...activity,
-    id: Date.now().toString(),
-    points
-  };
-  
-  localStorage.setItem(ACTIVITIES_KEY, JSON.stringify([...activities, newActivity]));
-  
-  // Update participant's total stats
-  updateParticipantStats(activity.participantId, activity.minutes);
-  
-  toast.success(`Activity added: ${points} points earned!`);
+  try {
+    // Try to add to Supabase first
+    const { error } = await supabase
+      .from('activities')
+      .insert({
+        participant_id: activity.participantId,
+        type: activity.type,
+        minutes: activity.minutes,
+        date: activity.date,
+        notes: activity.notes || null,
+        points: points
+      });
+    
+    if (error) {
+      console.error("Error adding to Supabase:", error);
+      throw error;
+    }
+
+    // Update participant's total stats
+    await updateParticipantStatsInSupabase(activity.participantId, activity.minutes);
+    
+    toast.success(`Activity added: ${points} points earned!`);
+    
+    // Trigger an event to refresh the UI
+    window.dispatchEvent(new Event("storage"));
+    
+  } catch (e) {
+    console.error("Error in addActivity:", e);
+    
+    // Fall back to local storage
+    const activities = localStorage.getItem(ACTIVITIES_KEY);
+    const parsedActivities = activities ? JSON.parse(activities) : [];
+    
+    const newActivity: Activity = {
+      ...activity,
+      id: Date.now().toString(),
+      points
+    };
+    
+    localStorage.setItem(ACTIVITIES_KEY, JSON.stringify([...parsedActivities, newActivity]));
+    
+    // Update participant's total stats
+    updateParticipantStats(activity.participantId, activity.minutes);
+    
+    toast.success(`Activity added: ${points} points earned! (local storage mode)`);
+    
+    // Dispatch an event to notify other components
+    window.dispatchEvent(new Event("storage"));
+  }
 };
 
-export const deleteActivity = (activityId: string): void => {
-  const activities = getActivities();
-  const activityToDelete = activities.find(a => a.id === activityId);
-  
-  if (!activityToDelete) return;
-  
-  // Update participant stats (subtract the activity)
-  const participants = getParticipants();
-  const participant = participants.find(p => p.id === activityToDelete.participantId);
-  
-  if (participant) {
-    participant.totalMinutes -= activityToDelete.minutes;
-    participant.points -= activityToDelete.points;
-    localStorage.setItem(PARTICIPANTS_KEY, JSON.stringify(participants));
+export const deleteActivity = async (activityId: string): Promise<void> => {
+  try {
+    // Get the activity first to know how many points to subtract
+    const { data: activityToDelete, error: fetchError } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('id', activityId)
+      .single();
+    
+    if (fetchError || !activityToDelete) {
+      console.error("Error fetching activity:", fetchError);
+      throw fetchError;
+    }
+    
+    // Delete the activity
+    const { error: deleteError } = await supabase
+      .from('activities')
+      .delete()
+      .eq('id', activityId);
+    
+    if (deleteError) {
+      console.error("Error deleting activity:", deleteError);
+      throw deleteError;
+    }
+    
+    // Update participant stats
+    await updateParticipantStatsInSupabase(
+      activityToDelete.participant_id, 
+      -activityToDelete.minutes
+    );
+    
+    toast.success("Activity deleted!");
+    
+    // Trigger an event to refresh the UI
+    window.dispatchEvent(new Event("storage"));
+    
+  } catch (e) {
+    console.error("Error in deleteActivity:", e);
+    
+    // Fall back to local storage
+    const activities = localStorage.getItem(ACTIVITIES_KEY);
+    const parsedActivities = activities ? JSON.parse(activities) : [];
+    const activityToDelete = parsedActivities.find(a => a.id === activityId);
+    
+    if (!activityToDelete) return;
+    
+    // Update participant stats (subtract the activity)
+    const participants = getParticipants();
+    const participant = participants.find(p => p.id === activityToDelete.participantId);
+    
+    if (participant) {
+      participant.totalMinutes -= activityToDelete.minutes;
+      participant.points -= activityToDelete.points;
+      localStorage.setItem(PARTICIPANTS_KEY, JSON.stringify(participants));
+    }
+    
+    // Remove the activity
+    const updatedActivities = parsedActivities.filter(a => a.id !== activityId);
+    localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(updatedActivities));
+    
+    toast.success("Activity deleted! (local storage mode)");
+    
+    // Trigger an event to refresh the UI
+    window.dispatchEvent(new Event("storage"));
   }
-  
-  // Remove the activity
-  const updatedActivities = activities.filter(a => a.id !== activityId);
-  localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(updatedActivities));
-  
-  toast.success("Activity deleted!");
+};
+
+// New helper function to update participant stats in Supabase
+const updateParticipantStatsInSupabase = async (participantId: string, additionalMinutes: number): Promise<void> => {
+  try {
+    // First get the current participant's stats
+    const { data: participant, error: fetchError } = await supabase
+      .from('participants')
+      .select('total_minutes, points')
+      .eq('id', participantId)
+      .single();
+    
+    if (fetchError) {
+      console.error("Error fetching participant:", fetchError);
+      throw fetchError;
+    }
+    
+    const additionalPoints = calculatePoints(additionalMinutes);
+    const newTotalMinutes = (participant.total_minutes || 0) + additionalMinutes;
+    const newPoints = (participant.points || 0) + additionalPoints;
+    
+    // Update the participant's stats
+    const { error: updateError } = await supabase
+      .from('participants')
+      .update({
+        total_minutes: Math.max(0, newTotalMinutes), // Prevent negative values
+        points: Math.max(0, newPoints) // Prevent negative values
+      })
+      .eq('id', participantId);
+    
+    if (updateError) {
+      console.error("Error updating participant stats:", updateError);
+      throw updateError;
+    }
+  } catch (e) {
+    console.error("Error in updateParticipantStatsInSupabase:", e);
+    
+    // Fall back to local storage method
+    updateParticipantStats(participantId, additionalMinutes);
+  }
 };

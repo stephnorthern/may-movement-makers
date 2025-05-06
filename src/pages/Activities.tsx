@@ -30,24 +30,27 @@ const Activities = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   
   useEffect(() => {
-    const loadActivities = () => {
+    const loadActivities = async () => {
       setIsLoading(true);
-      const data = getActivities();
-      // Sort by date (newest first)
-      const sortedData = [...data].sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      setActivities(sortedData);
-      setIsLoading(false);
+      try {
+        const data = await getActivities();
+        // Sort by date (newest first)
+        const sortedData = [...data].sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setActivities(sortedData);
+      } catch (error) {
+        console.error("Error loading activities:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     loadActivities();
     
     // Listen for storage changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "may-movement-activities") {
-        loadActivities();
-      }
+    const handleStorageChange = () => {
+      loadActivities();
     };
     
     window.addEventListener("storage", handleStorageChange);
@@ -57,10 +60,14 @@ const Activities = () => {
     };
   }, []);
   
-  const handleDelete = (id: string) => {
-    deleteActivity(id);
-    setActivities(activities.filter(a => a.id !== id));
-    setDeleteId(null);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteActivity(id);
+      setActivities(activities.filter(a => a.id !== id));
+      setDeleteId(null);
+    } catch (error) {
+      console.error("Error deleting activity:", error);
+    }
   };
   
   // Group activities by date

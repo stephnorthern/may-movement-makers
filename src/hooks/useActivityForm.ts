@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { addActivity, getParticipants } from "@/lib/local-storage";
 import { validateField, ValidationError } from "@/utils/formValidation";
@@ -35,17 +35,22 @@ export function useActivityForm() {
   });
   
   // Load participants data
-  useState(() => {
-    try {
-      const data = getParticipants();
-      setParticipants(data);
-    } catch (error) {
-      toast.error("Failed to load participants. Please try again.");
-      console.error("Error loading participants:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  });
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      try {
+        setIsLoading(true);
+        const data = getParticipants();
+        setParticipants(data);
+      } catch (error) {
+        toast.error("Failed to load participants. Please try again.");
+        console.error("Error loading participants:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchParticipants();
+  }, []);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -112,7 +117,7 @@ export function useActivityForm() {
       const minutes = parseInt(formData.minutes);
       
       // Add the activity
-      addActivity({
+      await addActivity({
         participantId: formData.participantId,
         participantName: participant.name,
         type: formData.type,
@@ -120,11 +125,6 @@ export function useActivityForm() {
         date: formData.date,
         notes: formData.notes
       });
-      
-      // Dispatch an event to notify other components
-      window.dispatchEvent(new Event("storage"));
-      
-      toast.success("Activity logged successfully!");
       
       // Navigate back to activities list
       navigate("/activities");
