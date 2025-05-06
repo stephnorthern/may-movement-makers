@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
-import { Participant } from "@/types";
-import { getParticipants, getParticipantActivities, addParticipant } from "@/lib/local-storage";
+import { Participant, Team } from "@/types";
+import { getParticipants, getParticipantActivities, addParticipant, getTeams, assignParticipantToTeam } from "@/lib/local-storage";
 import { 
   Card, 
   CardContent, 
@@ -20,27 +20,40 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Trophy, Activity, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const Participants = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [newParticipantName, setNewParticipantName] = useState("");
+  const [newParticipantTeamId, setNewParticipantTeamId] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   
-  const loadParticipants = () => {
-    const data = getParticipants();
+  const loadData = () => {
+    const participantsData = getParticipants();
+    const teamsData = getTeams();
     // Sort by points (highest first)
-    const sortedData = [...data].sort((a, b) => b.points - a.points);
+    const sortedData = [...participantsData].sort((a, b) => b.points - a.points);
     setParticipants(sortedData);
+    setTeams(teamsData);
   };
   
   useEffect(() => {
-    loadParticipants();
+    loadData();
     
     // Listen for storage changes
     const handleStorageChange = () => {
-      loadParticipants();
+      loadData();
     };
     
     window.addEventListener("storage", handleStorageChange);
@@ -64,10 +77,26 @@ const Participants = () => {
       return;
     }
     
-    addParticipant({ name: newParticipantName.trim() });
+    addParticipant({ 
+      name: newParticipantName.trim(),
+      teamId: newParticipantTeamId || undefined
+    });
     setNewParticipantName("");
+    setNewParticipantTeamId("");
     setIsDialogOpen(false);
-    loadParticipants();
+    loadData();
+  };
+  
+  const handleTeamChange = (participantId: string, teamId: string | null) => {
+    assignParticipantToTeam(participantId, teamId);
+    setIsTeamDialogOpen(false);
+    setSelectedParticipant(null);
+    loadData();
+  };
+  
+  const getTeamById = (teamId?: string) => {
+    if (!teamId) return null;
+    return teams.find(team => team.id === teamId) || null;
   };
   
   return (
@@ -101,6 +130,27 @@ const Participants = () => {
                     onChange={(e) => setNewParticipantName(e.target.value)}
                   />
                 </div>
+                {teams.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="team">Team (Optional)</Label>
+                    <Select 
+                      value={newParticipantTeamId} 
+                      onValueChange={setNewParticipantTeamId}
+                    >
+                      <SelectTrigger id="team">
+                        <SelectValue placeholder="Select a team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Team</SelectItem>
+                        {teams.map(team => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -118,9 +168,15 @@ const Participants = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {participants.map((participant) => {
           const activities = getParticipantActivities(participant.id);
+          const team = getTeamById(participant.teamId);
+          
           return (
             <Card key={participant.id} className="overflow-hidden">
-              <div className="h-2 bg-gradient-to-r from-movement-purple to-movement-dark-purple" />
+              {team ? (
+                <div className="h-2" style={{ backgroundColor: team.color }} />
+              ) : (
+                <div className="h-2 bg-gradient-to-r from-movement-purple to-movement-dark-purple" />
+              )}
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <span>{participant.name}</span>
@@ -129,6 +185,15 @@ const Participants = () => {
                     <span>{participant.points} pts</span>
                   </div>
                 </CardTitle>
+                {team && (
+                  <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: team.color }}
+                    ></div>
+                    Team: {team.name}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -149,6 +214,21 @@ const Participants = () => {
                         <Activity className="h-4 w-4" /> Activities
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <Button
+                      variant="outline" 
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedParticipant(participant);
+                        setIsTeamDialogOpen(true);
+                      }}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      {participant.teamId ? "Change Team" : "Assign to Team"}
+                    </Button>
                   </div>
                   
                   {activities.length > 0 && (
@@ -198,6 +278,58 @@ const Participants = () => {
           </div>
         )}
       </div>
+      
+      {/* Team Assignment Dialog */}
+      <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Team</DialogTitle>
+            <DialogDescription>
+              {selectedParticipant?.name ? `Assign ${selectedParticipant.name} to a team` : "Assign participant to a team"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="select-team">Select Team</Label>
+              <Select 
+                value={selectedParticipant?.teamId || ""} 
+                onValueChange={(value) => handleTeamChange(selectedParticipant?.id || "", value || null)}
+              >
+                <SelectTrigger id="select-team">
+                  <SelectValue placeholder="Select a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Team</SelectItem>
+                  {teams.map(team => (
+                    <SelectItem key={team.id} value={team.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: team.color }}
+                        ></div>
+                        {team.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsTeamDialogOpen(false)}>
+              Cancel
+            </Button>
+            {selectedParticipant?.teamId && (
+              <Button 
+                variant="destructive" 
+                onClick={() => handleTeamChange(selectedParticipant?.id || "", null)}
+              >
+                Remove from Team
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

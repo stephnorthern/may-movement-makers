@@ -1,9 +1,10 @@
 
-import { Participant, Activity } from "@/types";
+import { Participant, Activity, Team } from "@/types";
 import { toast } from "sonner";
 
 const PARTICIPANTS_KEY = "may-movement-participants";
 const ACTIVITIES_KEY = "may-movement-activities";
+const TEAMS_KEY = "may-movement-teams";
 
 // Helper to calculate points from minutes
 export const calculatePoints = (minutes: number): number => {
@@ -19,12 +20,14 @@ const initializeData = () => {
         name: "Emma Johnson",
         points: 12,
         totalMinutes: 180,
+        teamId: "team1"
       },
       {
         id: "2",
         name: "Alex Rodriguez",
         points: 8,
         totalMinutes: 120,
+        teamId: "team2"
       },
       {
         id: "3",
@@ -68,6 +71,21 @@ const initializeData = () => {
       }
     ];
     localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(sampleActivities));
+    
+    // Add sample teams
+    const sampleTeams: Team[] = [
+      {
+        id: "team1",
+        name: "Red Racers",
+        color: "#F87171"
+      },
+      {
+        id: "team2",
+        name: "Blue Blazers",
+        color: "#60A5FA"
+      }
+    ];
+    localStorage.setItem(TEAMS_KEY, JSON.stringify(sampleTeams));
   }
 };
 
@@ -112,6 +130,79 @@ export const updateParticipantStats = (participantId: string, additionalMinutes:
   
   participants[participantIndex] = participant;
   localStorage.setItem(PARTICIPANTS_KEY, JSON.stringify(participants));
+};
+
+export const assignParticipantToTeam = (participantId: string, teamId: string | null): void => {
+  const participants = getParticipants();
+  const participantIndex = participants.findIndex(p => p.id === participantId);
+  
+  if (participantIndex === -1) return;
+  
+  const participant = participants[participantIndex];
+  
+  if (teamId) {
+    participant.teamId = teamId;
+    toast.success(`${participant.name} added to team!`);
+  } else {
+    delete participant.teamId;
+    toast.success(`${participant.name} removed from team!`);
+  }
+  
+  participants[participantIndex] = participant;
+  localStorage.setItem(PARTICIPANTS_KEY, JSON.stringify(participants));
+};
+
+// Team Methods
+export const getTeams = (): Team[] => {
+  const data = localStorage.getItem(TEAMS_KEY);
+  return data ? JSON.parse(data) : [];
+};
+
+export const getTeam = (id: string): Team | undefined => {
+  const teams = getTeams();
+  return teams.find(t => t.id === id);
+};
+
+export const addTeam = (team: Omit<Team, "id">): void => {
+  const teams = getTeams();
+  const newTeam: Team = {
+    ...team,
+    id: Date.now().toString()
+  };
+  
+  localStorage.setItem(TEAMS_KEY, JSON.stringify([...teams, newTeam]));
+  toast.success(`Team ${team.name} added!`);
+};
+
+export const updateTeam = (id: string, updates: Partial<Omit<Team, "id">>): void => {
+  const teams = getTeams();
+  const teamIndex = teams.findIndex(t => t.id === id);
+  
+  if (teamIndex === -1) return;
+  
+  teams[teamIndex] = { ...teams[teamIndex], ...updates };
+  localStorage.setItem(TEAMS_KEY, JSON.stringify(teams));
+  toast.success(`Team updated!`);
+};
+
+export const deleteTeam = (id: string): void => {
+  // First, remove team from all participants
+  const participants = getParticipants();
+  const updatedParticipants = participants.map(p => {
+    if (p.teamId === id) {
+      const { teamId, ...rest } = p;
+      return rest;
+    }
+    return p;
+  });
+  localStorage.setItem(PARTICIPANTS_KEY, JSON.stringify(updatedParticipants));
+  
+  // Then delete the team
+  const teams = getTeams();
+  const filteredTeams = teams.filter(t => t.id !== id);
+  localStorage.setItem(TEAMS_KEY, JSON.stringify(filteredTeams));
+  
+  toast.success(`Team deleted!`);
 };
 
 // Activity Methods

@@ -5,6 +5,7 @@ export interface Participant {
   avatar?: string;
   points: number;
   totalMinutes: number;
+  teamId?: string;
 }
 
 export interface Activity {
@@ -16,4 +17,10 @@ export interface Activity {
   points: number;
   date: string;
   notes?: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  color: string;
 }
