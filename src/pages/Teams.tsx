@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Team, Participant } from "@/types";
 import { getTeams, getParticipants, addTeam, updateTeam, deleteTeam, assignParticipantToTeam } from "@/lib/local-storage";
@@ -46,9 +47,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Plus, Users, Edit, Trash2 } from "lucide-react";
+import { Plus, Users, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { EditTeamDialog } from "@/components/EditTeamDialog";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -190,84 +192,6 @@ const Teams = () => {
     );
   };
   
-  const renderEditTeamDialog = (team: Team) => {
-    const [editName, setEditName] = useState(team.name);
-    const [editColor, setEditColor] = useState(team.color);
-    const [isOpen, setIsOpen] = useState(false);
-    
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!editName.trim()) {
-        toast.error("Please enter a team name");
-        return;
-      }
-      
-      // Check for duplicate names, excluding current team
-      if (teams.some(t => t.id !== team.id && t.name.toLowerCase() === editName.trim().toLowerCase())) {
-        toast.error("A team with this name already exists");
-        return;
-      }
-      
-      handleUpdateTeam(team.id, editName.trim(), editColor);
-      setIsOpen(false);
-    };
-    
-    return (
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <Edit className="h-4 w-4" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Team</DialogTitle>
-            <DialogDescription>
-              Update team information
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Team Name</Label>
-                <Input
-                  id="edit-name"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-color">Team Color</Label>
-                <div className="flex gap-3">
-                  <Input
-                    id="edit-color"
-                    type="color"
-                    value={editColor}
-                    onChange={(e) => setEditColor(e.target.value)}
-                    className="w-12 h-10 p-1"
-                  />
-                  <Input 
-                    value={editColor}
-                    onChange={(e) => setEditColor(e.target.value)}
-                    placeholder="#HEX"
-                  />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-movement-purple hover:bg-movement-dark-purple">
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-  
   const ManageMembers = () => {
     if (!selectedTeam) return null;
     
@@ -385,7 +309,7 @@ const Teams = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle>{team.name}</CardTitle>
                   <div className="flex gap-2">
-                    {renderEditTeamDialog(team)}
+                    <EditTeamDialog team={team} onUpdate={handleUpdateTeam} teams={teams} />
                     <Button 
                       variant="outline" 
                       size="icon" 
