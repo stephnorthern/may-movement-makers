@@ -59,10 +59,11 @@ const Dashboard = () => {
     loadData();
     
     // Set up event listener for storage changes
-    window.addEventListener('storage', () => { loadData(); });
+    const handleStorageChange = () => { loadData(); };
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
-      window.removeEventListener('storage', () => { loadData(); });
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
