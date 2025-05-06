@@ -1,12 +1,15 @@
 
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { Calendar, Trophy, Users, Activity } from "lucide-react";
+import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
+import { Calendar, Trophy, Users, Activity, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const MainLayout = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut, loading } = useAuth();
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: <Trophy className="h-5 w-5" /> },
@@ -15,6 +18,11 @@ const MainLayout = () => {
     { path: "/teams", label: "Teams", icon: <Users className="h-5 w-5" /> },
     { path: "/calendar", label: "Calendar", icon: <Calendar className="h-5 w-5" /> },
   ];
+
+  // Redirect to auth page if user is not authenticated
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -28,15 +36,35 @@ const MainLayout = () => {
             <h1 className="text-2xl font-bold gradient-text">May Movement</h1>
           </Link>
           
-          {/* Mobile menu button */}
-          <button 
-            className="md:hidden p-2 text-gray-500 hover:text-gray-800"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-4">
+            {/* User display and logout */}
+            {user && (
+              <div className="hidden md:flex items-center gap-4">
+                <span className="text-sm text-gray-600">
+                  {user.email}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={signOut}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            )}
+
+            {/* Mobile menu button */}
+            <button 
+              className="md:hidden p-2 text-gray-500 hover:text-gray-800"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-6">
@@ -74,6 +102,19 @@ const MainLayout = () => {
                   {item.label}
                 </Link>
               ))}
+              {user && (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-2 p-2 rounded-md text-gray-600 hover:bg-gray-100"
+                  onClick={() => {
+                    signOut();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="h-5 w-5" />
+                  Logout
+                </Button>
+              )}
             </div>
           </nav>
         )}
