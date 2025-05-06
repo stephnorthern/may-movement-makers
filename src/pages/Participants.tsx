@@ -141,7 +141,7 @@ const Participants = () => {
                         <SelectValue placeholder="Select a team" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Team</SelectItem>
+                        <SelectItem value="none">No Team</SelectItem>
                         {teams.map(team => (
                           <SelectItem key={team.id} value={team.id}>
                             {team.name}
@@ -292,14 +292,14 @@ const Participants = () => {
             <div className="space-y-2">
               <Label htmlFor="select-team">Select Team</Label>
               <Select 
-                value={selectedParticipant?.teamId || ""} 
-                onValueChange={(value) => handleTeamChange(selectedParticipant?.id || "", value || null)}
+                value={selectedParticipant?.teamId || "none"} 
+                onValueChange={(value) => handleTeamChange(selectedParticipant?.id || "", value === "none" ? null : value)}
               >
                 <SelectTrigger id="select-team">
                   <SelectValue placeholder="Select a team" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Team</SelectItem>
+                  <SelectItem value="none">No Team</SelectItem>
                   {teams.map(team => (
                     <SelectItem key={team.id} value={team.id}>
                       <div className="flex items-center gap-2">
