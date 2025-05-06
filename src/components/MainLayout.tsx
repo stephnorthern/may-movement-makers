@@ -12,6 +12,7 @@ const MainLayout = () => {
     { path: "/", label: "Dashboard", icon: <Trophy className="h-5 w-5" /> },
     { path: "/activities", label: "Activities", icon: <Activity className="h-5 w-5" /> },
     { path: "/participants", label: "Participants", icon: <Users className="h-5 w-5" /> },
+    { path: "/teams", label: "Teams", icon: <Users className="h-5 w-5" /> },
     { path: "/calendar", label: "Calendar", icon: <Calendar className="h-5 w-5" /> },
   ];
 
