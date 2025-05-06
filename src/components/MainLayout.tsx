@@ -37,10 +37,10 @@ const MainLayout = () => {
           </Link>
           
           <div className="flex items-center gap-4">
-            {/* User display and logout */}
+            {/* User display and logout - Always visible */}
             {user && (
-              <div className="hidden md:flex items-center gap-4">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 hidden md:inline">
                   {user.email}
                 </span>
                 <Button 
@@ -50,7 +50,7 @@ const MainLayout = () => {
                   className="flex items-center gap-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  Logout
+                  <span className="hidden md:inline">Logout</span>
                 </Button>
               </div>
             )}
@@ -102,19 +102,6 @@ const MainLayout = () => {
                   {item.label}
                 </Link>
               ))}
-              {user && (
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start gap-2 p-2 rounded-md text-gray-600 hover:bg-gray-100"
-                  onClick={() => {
-                    signOut();
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  <LogOut className="h-5 w-5" />
-                  Logout
-                </Button>
-              )}
             </div>
           </nav>
         )}
