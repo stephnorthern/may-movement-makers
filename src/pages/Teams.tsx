@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Team, Participant } from "@/types";
 import { getTeams, getParticipants, addTeam, updateTeam, deleteTeam, assignParticipantToTeam } from "@/lib/local-storage";
@@ -49,7 +48,7 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, Users, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -59,7 +58,7 @@ const Teams = () => {
   const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   const loadData = () => {
     const teamsData = getTeams();
