@@ -133,13 +133,11 @@ export const getActivities = async (): Promise<Activity[]> => {
       .from('activities')
       .select(`
         id,
-        type,
+        participant_id,
+        description,
         minutes,
         date,
-        notes,
-        points,
-        participant_id,
-        participants (name)
+        points
       `)
       .order('created_at', { ascending: false });
     
@@ -150,17 +148,28 @@ export const getActivities = async (): Promise<Activity[]> => {
       return localData ? JSON.parse(localData) : [];
     }
 
+    if (!supabaseActivities) {
+      return [];
+    }
+
+    // Get participants to map names
+    const participants = getParticipants();
+
     // Map Supabase data to our Activity type
-    return supabaseActivities.map(a => ({
-      id: a.id,
-      participantId: a.participant_id,
-      participantName: a.participants?.name || "Unknown",
-      type: a.type,
-      minutes: a.minutes,
-      points: a.points,
-      date: a.date,
-      notes: a.notes || undefined
-    }));
+    return supabaseActivities.map(a => {
+      const participant = participants.find(p => p.id === a.participant_id) || { name: "Unknown" };
+      
+      return {
+        id: a.id,
+        participantId: a.participant_id,
+        participantName: participant.name,
+        type: a.description, // Map description to type
+        minutes: a.minutes,
+        points: a.points || calculatePoints(a.minutes),
+        date: a.date.split('T')[0], // Format date
+        notes: ""  // No notes field in our DB yet
+      };
+    });
   } catch (e) {
     console.error("Error in getActivities:", e);
     // Fall back to local storage
@@ -176,13 +185,11 @@ export const getParticipantActivities = async (participantId: string): Promise<A
       .from('activities')
       .select(`
         id,
-        type,
+        participant_id,
+        description,
         minutes,
         date,
-        notes,
-        points,
-        participant_id,
-        participants (name)
+        points
       `)
       .eq('participant_id', participantId)
       .order('created_at', { ascending: false });
@@ -195,17 +202,27 @@ export const getParticipantActivities = async (participantId: string): Promise<A
       return parsedActivities.filter(activity => activity.participantId === participantId);
     }
 
+    if (!supabaseActivities) {
+      return [];
+    }
+
+    // Get participants to map names
+    const participants = getParticipants();
+    const participant = participants.find(p => p.id === participantId) || { name: "Unknown" };
+
     // Map Supabase data to our Activity type
-    return supabaseActivities.map(a => ({
-      id: a.id,
-      participantId: a.participant_id,
-      participantName: a.participants?.name || "Unknown",
-      type: a.type,
-      minutes: a.minutes,
-      points: a.points,
-      date: a.date,
-      notes: a.notes || undefined
-    }));
+    return supabaseActivities.map(a => {
+      return {
+        id: a.id,
+        participantId: a.participant_id,
+        participantName: participant.name,
+        type: a.description, // Map description to type
+        minutes: a.minutes,
+        points: a.points || calculatePoints(a.minutes),
+        date: a.date.split('T')[0], // Format date
+        notes: ""  // No notes field in our DB yet
+      };
+    });
   } catch (e) {
     console.error("Error in getParticipantActivities:", e);
     // Fall back to local storage
@@ -224,10 +241,9 @@ export const addActivity = async (activity: Omit<Activity, "id" | "points">): Pr
       .from('activities')
       .insert({
         participant_id: activity.participantId,
-        type: activity.type,
+        description: activity.type, // Map type to description
         minutes: activity.minutes,
         date: activity.date,
-        notes: activity.notes || null,
         points: points
       });
     
@@ -342,7 +358,7 @@ const updateParticipantStatsInSupabase = async (participantId: string, additiona
     // First get the current participant's stats
     const { data: participant, error: fetchError } = await supabase
       .from('participants')
-      .select('total_minutes, points')
+      .select('total_minutes')
       .eq('id', participantId)
       .single();
     
@@ -353,14 +369,12 @@ const updateParticipantStatsInSupabase = async (participantId: string, additiona
     
     const additionalPoints = calculatePoints(additionalMinutes);
     const newTotalMinutes = (participant.total_minutes || 0) + additionalMinutes;
-    const newPoints = (participant.points || 0) + additionalPoints;
     
     // Update the participant's stats
     const { error: updateError } = await supabase
       .from('participants')
       .update({
-        total_minutes: Math.max(0, newTotalMinutes), // Prevent negative values
-        points: Math.max(0, newPoints) // Prevent negative values
+        total_minutes: Math.max(0, newTotalMinutes) // Prevent negative values
       })
       .eq('id', participantId);
     

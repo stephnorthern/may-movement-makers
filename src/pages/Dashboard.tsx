@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 const Dashboard = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalMinutes: 0,
     totalPoints: 0,
@@ -30,31 +31,38 @@ const Dashboard = () => {
   
   useEffect(() => {
     // Load data
-    const loadData = () => {
-      const participantsData = getParticipants();
-      const activitiesData = getActivities();
-      
-      setParticipants(participantsData);
-      setActivities(activitiesData);
-      
-      // Calculate stats
-      const totalMinutes = participantsData.reduce((sum, p) => sum + p.totalMinutes, 0);
-      const totalPoints = participantsData.reduce((sum, p) => sum + p.points, 0);
-      
-      setStats({
-        totalMinutes,
-        totalPoints,
-        totalActivities: activitiesData.length
-      });
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const participantsData = getParticipants();
+        const activitiesData = await getActivities();
+        
+        setParticipants(participantsData);
+        setActivities(activitiesData);
+        
+        // Calculate stats
+        const totalMinutes = participantsData.reduce((sum, p) => sum + p.totalMinutes, 0);
+        const totalPoints = participantsData.reduce((sum, p) => sum + p.points, 0);
+        
+        setStats({
+          totalMinutes,
+          totalPoints,
+          totalActivities: activitiesData.length
+        });
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     loadData();
     
     // Set up event listener for storage changes
-    window.addEventListener('storage', loadData);
+    window.addEventListener('storage', () => { loadData(); });
     
     return () => {
-      window.removeEventListener('storage', loadData);
+      window.removeEventListener('storage', () => { loadData(); });
     };
   }, []);
 
@@ -66,6 +74,15 @@ const Dashboard = () => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
   
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-purple border-t-transparent"></div>
+        <p className="mt-2 text-gray-600">Loading dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

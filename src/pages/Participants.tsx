@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Participant, Team } from "@/types";
+import { Participant, Team, Activity } from "@/types";
 import { getParticipants, getParticipantActivities, addParticipant, getTeams, assignParticipantToTeam } from "@/lib/local-storage";
 import { 
   Card, 
@@ -27,25 +27,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trophy, Activity, Clock, Users } from "lucide-react";
+import { Plus, Trophy, Activity as ActivityIcon, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const Participants = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [participantActivities, setParticipantActivities] = useState<Record<string, Activity[]>>({});
   const [newParticipantName, setNewParticipantName] = useState("");
   const [newParticipantTeamId, setNewParticipantTeamId] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const loadData = () => {
-    const participantsData = getParticipants();
-    const teamsData = getTeams();
-    // Sort by points (highest first)
-    const sortedData = [...participantsData].sort((a, b) => b.points - a.points);
-    setParticipants(sortedData);
-    setTeams(teamsData);
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const participantsData = getParticipants();
+      const teamsData = getTeams();
+      
+      // Sort by points (highest first)
+      const sortedData = [...participantsData].sort((a, b) => b.points - a.points);
+      setParticipants(sortedData);
+      setTeams(teamsData);
+      
+      // Load activities for each participant
+      const activitiesMap: Record<string, Activity[]> = {};
+      for (const participant of participantsData) {
+        const activities = await getParticipantActivities(participant.id);
+        activitiesMap[participant.id] = activities;
+      }
+      setParticipantActivities(activitiesMap);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast.error("Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   useEffect(() => {
@@ -98,6 +117,15 @@ const Participants = () => {
     if (!teamId) return null;
     return teams.find(team => team.id === teamId) || null;
   };
+  
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-purple border-t-transparent"></div>
+        <p className="mt-2 text-gray-600">Loading participants...</p>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -167,7 +195,7 @@ const Participants = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {participants.map((participant) => {
-          const activities = getParticipantActivities(participant.id);
+          const activities = participantActivities[participant.id] || [];
           const team = getTeamById(participant.teamId);
           
           return (
@@ -211,7 +239,7 @@ const Participants = () => {
                         {activities.length}
                       </div>
                       <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
-                        <Activity className="h-4 w-4" /> Activities
+                        <ActivityIcon className="h-4 w-4" /> Activities
                       </div>
                     </div>
                   </div>
