@@ -1,16 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
-import { Calendar, Trophy, Users, Activity, LogOut } from "lucide-react";
+import { Calendar, Trophy, Users, Activity, LogOut, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
+import { Badge } from "@/components/ui/badge";
 
 const MainLayout = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, signOut, loading } = useAuth();
+  const { user, role, signOut, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -44,6 +45,23 @@ const MainLayout = () => {
             <h1 className="text-2xl font-bold gradient-text">May Movement</h1>
           </Link>
           
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-6">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-1.5 text-gray-600 hover:text-movement-purple transition-colors",
+                  location.pathname === item.path && "text-movement-purple font-medium"
+                )}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
           <div className="flex items-center gap-4">
             {/* User display and logout - Always visible */}
             {user && (
@@ -51,6 +69,12 @@ const MainLayout = () => {
                 <span className="text-sm text-gray-600 hidden md:inline">
                   {user.email}
                 </span>
+                {role === 'admin' && (
+                  <Badge variant="secondary" className="mr-2">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Admin
+                  </Badge>
+                )}
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -73,23 +97,6 @@ const MainLayout = () => {
               </svg>
             </button>
           </div>
-          
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-1.5 text-gray-600 hover:text-movement-purple transition-colors",
-                  location.pathname === item.path && "text-movement-purple font-medium"
-                )}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-            ))}
-          </nav>
         </div>
         
         {/* Mobile Navigation */}
