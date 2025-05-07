@@ -1,4 +1,3 @@
-
 import { Participant } from "@/types";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +61,61 @@ export const getParticipants = async (): Promise<Participant[]> => {
     // Fall back to local storage
     const localData = localStorage.getItem(PARTICIPANTS_KEY);
     return localData ? JSON.parse(localData) : [];
+  }
+};
+
+export const getParticipant = async (id: string): Promise<Participant | undefined> => {
+  try {
+    const { data: participant, error } = await supabase
+      .from('participants')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error("Error fetching participant:", error);
+      throw error;
+    }
+    
+    if (!participant) return undefined;
+    
+    // Get team association
+    const { data: teamMember, error: teamMemberError } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('participant_id', id)
+      .maybeSingle();
+    
+    if (teamMemberError) {
+      console.error("Error fetching team member:", teamMemberError);
+    }
+    
+    // Get activities to calculate points
+    const { data: activities, error: activitiesError } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('participant_id', id);
+    
+    if (activitiesError) {
+      console.error("Error fetching activities:", activitiesError);
+    }
+    
+    const points = activities?.reduce((sum, activity) => sum + activity.points, 0) || 0;
+    
+    return {
+      id: participant.id,
+      name: participant.name,
+      points: points,
+      totalMinutes: participant.total_minutes || 0,
+      teamId: teamMember?.team_id
+    };
+    
+  } catch (e) {
+    console.error("Error in getParticipant:", e);
+    // Fall back to local storage
+    const participants = localStorage.getItem(PARTICIPANTS_KEY);
+    const parsedParticipants = participants ? JSON.parse(participants) : [];
+    return parsedParticipants.find(p => p.id === id);
   }
 };
 
@@ -166,7 +220,7 @@ export const updateParticipantStatsInSupabase = async (participantId: string, mi
   }
 };
 
-export const updateParticipantTeam = async (participantId: string, teamId: string | null): Promise<void> => {
+export const assignParticipantToTeam = async (participantId: string, teamId: string | null): Promise<void> => {
   try {
     // First, remove any existing team association
     const { error: deleteError } = await supabase
@@ -198,7 +252,7 @@ export const updateParticipantTeam = async (participantId: string, teamId: strin
     window.dispatchEvent(new Event("storage"));
     
   } catch (e) {
-    console.error("Error in updateParticipantTeam:", e);
+    console.error("Error in assignParticipantToTeam:", e);
     // Fall back to local storage
     const participants = localStorage.getItem(PARTICIPANTS_KEY);
     const parsedParticipants = participants ? JSON.parse(participants) : [];

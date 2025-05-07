@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Team, Participant } from "@/types";
 import { getTeams, getParticipants, addTeam, updateTeam, deleteTeam, assignParticipantToTeam } from "@/lib/local-storage";
@@ -62,11 +61,16 @@ const Teams = () => {
   const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
   const isMobile = useIsMobile();
   
-  const loadData = () => {
-    const teamsData = getTeams();
-    const participantsData = getParticipants();
-    setTeams(teamsData);
-    setParticipants(participantsData);
+  const loadData = async () => {
+    try {
+      const teamsData = await getTeams();
+      const participantsData = await getParticipants();
+      setTeams(teamsData);
+      setParticipants(participantsData);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast.error("Failed to load data");
+    }
   };
   
   useEffect(() => {
