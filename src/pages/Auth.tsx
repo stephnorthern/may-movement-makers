@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate, useLocation } from "react-router-dom";
@@ -15,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Activity } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -67,7 +68,7 @@ const Auth = () => {
   const handleLoginSubmit = async (values: LoginFormValues) => {
     try {
       await signIn(values.email, values.password);
-      toast.success("Successfully signed in");
+      // Toast is now handled in the AuthContext after successful login
     } catch (error) {
       console.error("Login error:", error);
     }
@@ -118,7 +119,12 @@ const Auth = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="you@example.com" type="email" {...field} />
+                      <Input 
+                        placeholder="you@example.com" 
+                        type="email" 
+                        autoComplete="email"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,7 +137,12 @@ const Auth = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input placeholder="******" type="password" {...field} />
+                      <Input 
+                        placeholder="******" 
+                        type="password" 
+                        autoComplete="current-password"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -139,7 +150,7 @@ const Auth = () => {
               />
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full bg-movement-purple hover:bg-movement-dark-purple" 
                 disabled={loading}
               >
                 {loading ? "Signing in..." : "Sign in"}
@@ -156,7 +167,11 @@ const Auth = () => {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Name" {...field} />
+                      <Input 
+                        placeholder="Your Name" 
+                        autoComplete="name"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -169,7 +184,12 @@ const Auth = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="you@example.com" type="email" {...field} />
+                      <Input 
+                        placeholder="you@example.com" 
+                        type="email" 
+                        autoComplete="email"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -182,7 +202,12 @@ const Auth = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input placeholder="******" type="password" {...field} />
+                      <Input 
+                        placeholder="******" 
+                        type="password" 
+                        autoComplete="new-password"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -195,7 +220,12 @@ const Auth = () => {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input placeholder="******" type="password" {...field} />
+                      <Input 
+                        placeholder="******" 
+                        type="password" 
+                        autoComplete="new-password"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -203,7 +233,7 @@ const Auth = () => {
               />
               <Button 
                 type="submit" 
-                className="w-full"
+                className="w-full bg-movement-purple hover:bg-movement-dark-purple"
                 disabled={loading}
               >
                 {loading ? "Signing up..." : "Sign up"}
