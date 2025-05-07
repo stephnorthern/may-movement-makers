@@ -22,8 +22,9 @@ const Teams = () => {
   const [newTeamColor, setNewTeamColor] = useState("#9b87f5");
   const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
+  const [isViewMembersOpen, setIsViewMembersOpen] = useState(false);
   const isMobile = useIsMobile();
+
   const loadData = async () => {
     try {
       const teamsData = await getTeams();
@@ -35,6 +36,7 @@ const Teams = () => {
       toast.error("Failed to load data");
     }
   };
+
   useEffect(() => {
     loadData();
 
@@ -47,6 +49,7 @@ const Teams = () => {
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
+
   const handleAddTeam = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeamName.trim()) {
@@ -68,12 +71,14 @@ const Teams = () => {
     setIsAddTeamDialogOpen(false);
     loadData();
   };
+
   const handleDeleteTeam = (teamId: string) => {
     if (confirm("Are you sure you want to delete this team? All members will be removed from the team.")) {
       deleteTeam(teamId);
       loadData();
     }
   };
+
   const handleUpdateTeam = (teamId: string, name: string, color: string) => {
     updateTeam(teamId, {
       name,
@@ -81,13 +86,16 @@ const Teams = () => {
     });
     loadData();
   };
+
   const handleAssignToTeam = (participantId: string, teamId: string | null) => {
     assignParticipantToTeam(participantId, teamId);
     loadData();
   };
+
   const teamMembers = (teamId: string) => {
     return participants.filter(p => p.teamId === teamId);
   };
+
   const unassignedParticipants = () => {
     return participants.filter(p => !p.teamId);
   };
@@ -146,73 +154,75 @@ const Teams = () => {
         </DialogContent>
       </Dialog>;
   };
-  const ManageMembers = () => {
+
+  const ViewMembers = () => {
     if (!selectedTeam) return null;
     const teamParticipants = teamMembers(selectedTeam.id);
-    const unassigned = unassignedParticipants();
-    const ManageMembersContent = () => <>
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-medium text-gray-600 mb-2">Current Team Members</h3>
-            {teamParticipants.length === 0 ? <p className="text-sm text-gray-500">No members in this team yet</p> : <div className="space-y-2">
-                {teamParticipants.map(participant => <div key={participant.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                    <div>
-                      <p className="font-medium">{participant.name}</p>
-                      <p className="text-xs text-gray-600">{participant.points} pts • {participant.totalMinutes} min</p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => handleAssignToTeam(participant.id, null)}>
-                      Remove
-                    </Button>
-                  </div>)}
-              </div>}
-          </div>
-          
-          {unassigned.length > 0 && <div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Available Participants</h3>
-              <div className="space-y-2">
-                {unassigned.map(participant => <div key={participant.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+    
+    const ViewMembersContent = () => (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-medium text-gray-600 mb-2">Team Members</h3>
+          {teamParticipants.length === 0 ? (
+            <p className="text-sm text-gray-500">No members in this team yet</p>
+          ) : (
+            <div className="space-y-2">
+              {teamParticipants.map(participant => (
+                <div 
+                  key={participant.id} 
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
+                >
+                  <div>
                     <p className="font-medium">{participant.name}</p>
-                    <Button size="sm" className="bg-movement-purple hover:bg-movement-dark-purple" onClick={() => handleAssignToTeam(participant.id, selectedTeam.id)}>
-                      Add to Team
-                    </Button>
-                  </div>)}
-              </div>
-            </div>}
+                    <p className="text-xs text-gray-600">{participant.points} pts • {participant.totalMinutes} min</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </>;
-    return isMobile ? <Drawer open={isManageMembersOpen} onOpenChange={setIsManageMembersOpen}>
+      </div>
+    );
+    
+    return isMobile ? (
+      <Drawer open={isViewMembersOpen} onOpenChange={setIsViewMembersOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Manage {selectedTeam.name} Members</DrawerTitle>
-            <DrawerDescription>Add or remove team members</DrawerDescription>
+            <DrawerTitle>{selectedTeam.name} Team Members</DrawerTitle>
+            <DrawerDescription>View all team members</DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4">
-            <ManageMembersContent />
+            <ViewMembersContent />
           </div>
           <DrawerFooter>
             <DrawerClose asChild>
-              <Button variant="outline" className="w-full">Done</Button>
+              <Button variant="outline" className="w-full">Close</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
-      </Drawer> : <Sheet open={isManageMembersOpen} onOpenChange={setIsManageMembersOpen}>
+      </Drawer>
+    ) : (
+      <Sheet open={isViewMembersOpen} onOpenChange={setIsViewMembersOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Manage {selectedTeam.name} Members</SheetTitle>
-            <SheetDescription>Add or remove team members</SheetDescription>
+            <SheetTitle>{selectedTeam.name} Team Members</SheetTitle>
+            <SheetDescription>View all team members</SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-4">
-            <ManageMembersContent />
+            <ViewMembersContent />
           </div>
           <div className="absolute bottom-6 right-6 left-6">
-            <Button variant="outline" className="w-full" onClick={() => setIsManageMembersOpen(false)}>
-              Done
+            <Button variant="outline" className="w-full" onClick={() => setIsViewMembersOpen(false)}>
+              Close
             </Button>
           </div>
         </SheetContent>
-      </Sheet>;
+      </Sheet>
+    );
   };
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold gradient-text">SingleStone May Movement Challenge</h1>
@@ -226,7 +236,8 @@ const Teams = () => {
         <CountdownTimer />
       </div>
       
-      {teamsWithTotals.length > 0 && <div className="bg-gradient-to-r from-movement-purple/10 to-movement-light-purple/10 p-4 rounded-lg mb-4">
+      {teamsWithTotals.length > 0 && (
+        <div className="bg-gradient-to-r from-movement-purple/10 to-movement-light-purple/10 p-4 rounded-lg mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Trophy className="h-5 w-5 text-movement-purple" />
             <h2 className="font-semibold text-movement-purple">Current Standings</h2>
@@ -234,24 +245,31 @@ const Teams = () => {
           <p className="text-sm text-gray-600">
             Teams are ranked by total points earned by all team members. Keep logging activities to move up!
           </p>
-        </div>}
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teamsWithTotals.map((team, index) => <Card key={team.id} className="overflow-hidden">
-            <div className="h-2" style={{
-          backgroundColor: team.color
-        }} />
+        {teamsWithTotals.map((team, index) => (
+          <Card key={team.id} className="overflow-hidden">
+            <div className="h-2" style={{ backgroundColor: team.color }} />
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {index === 0 && teamsWithTotals.length > 1 && <span className="inline-flex items-center justify-center rounded-full bg-yellow-100 w-6 h-6">
+                  {index === 0 && teamsWithTotals.length > 1 && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-yellow-100 w-6 h-6">
                       <Trophy className="h-3 w-3 text-yellow-600" />
-                    </span>}
+                    </span>
+                  )}
                   <CardTitle>{team.name}</CardTitle>
                 </div>
                 <div className="flex gap-2">
                   <EditTeamDialog team={team} onUpdate={handleUpdateTeam} teams={teams} />
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDeleteTeam(team.id)}>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    onClick={() => handleDeleteTeam(team.id)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -264,9 +282,7 @@ const Teams = () => {
               <div className="space-y-4">
                 <div className="flex gap-4">
                   <div className="flex-1 bg-gray-50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold" style={{
-                  color: team.color
-                }}>
+                    <div className="text-2xl font-bold" style={{ color: team.color }}>
                       {team.totalPoints}
                     </div>
                     <div className="text-sm text-gray-600">
@@ -274,9 +290,7 @@ const Teams = () => {
                     </div>
                   </div>
                   <div className="flex-1 bg-gray-50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold" style={{
-                  color: team.color
-                }}>
+                    <div className="text-2xl font-bold" style={{ color: team.color }}>
                       {team.totalMinutes}
                     </div>
                     <div className="text-sm text-gray-600">
@@ -285,40 +299,51 @@ const Teams = () => {
                   </div>
                 </div>
                 
-                {team.members.length > 0 ? <div>
+                {team.members.length > 0 ? (
+                  <div>
                     <h3 className="text-sm font-medium text-gray-600 mb-2">Team Members</h3>
                     <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                      {team.members.map(member => <div key={member.id} className="bg-gray-50 p-2 rounded text-sm">
+                      {team.members.map(member => (
+                        <div key={member.id} className="bg-gray-50 p-2 rounded text-sm">
                           <div className="flex justify-between font-medium">
                             <span>{member.name}</span>
-                            <span style={{
-                      color: team.color
-                    }}>{member.points} pts</span>
+                            <span style={{ color: team.color }}>{member.points} pts</span>
                           </div>
                           <div className="text-gray-600 text-xs">
                             {member.totalMinutes} minutes
                           </div>
-                        </div>)}
+                        </div>
+                      ))}
                     </div>
-                  </div> : <div className="text-center py-4">
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
                     <div className="rounded-full bg-gray-100 w-10 h-10 flex items-center justify-center mx-auto mb-2">
                       <Users className="h-5 w-5 text-gray-400" />
                     </div>
                     <p className="text-sm text-gray-500">No members yet</p>
-                  </div>}
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full" onClick={() => {
-            setSelectedTeam(team);
-            setIsManageMembersOpen(true);
-          }}>
-                Manage Members
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => {
+                  setSelectedTeam(team);
+                  setIsViewMembersOpen(true);
+                }}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                View Members
               </Button>
             </CardFooter>
-          </Card>)}
+          </Card>
+        ))}
         
-        {teams.length === 0 && <div className="col-span-full">
+        {teams.length === 0 && (
+          <div className="col-span-full">
             <Card className="bg-gray-50 border-dashed">
               <CardContent className="pt-6 text-center">
                 <div className="rounded-full bg-movement-light-purple w-12 h-12 flex items-center justify-center mx-auto mb-4">
@@ -326,16 +351,21 @@ const Teams = () => {
                 </div>
                 <h3 className="text-lg font-medium mb-2">No teams yet</h3>
                 <p className="text-gray-600 mb-4">Create teams to group participants together</p>
-                <Button className="bg-movement-purple hover:bg-movement-dark-purple" onClick={() => setIsAddTeamDialogOpen(true)}>
+                <Button 
+                  className="bg-movement-purple hover:bg-movement-dark-purple" 
+                  onClick={() => setIsAddTeamDialogOpen(true)}
+                >
                   <Plus className="mr-2 h-4 w-4" /> Create First Team
                 </Button>
               </CardContent>
             </Card>
-          </div>}
+          </div>
+        )}
       </div>
       
-      {selectedTeam && <ManageMembers />}
-    </div>;
+      {selectedTeam && <ViewMembers />}
+    </div>
+  );
 };
 
 export default Teams;
