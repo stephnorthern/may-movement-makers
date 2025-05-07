@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, UserRound } from "lucide-react";
 import { format } from "date-fns";
 
 const Activities = () => {
@@ -122,9 +122,12 @@ const Activities = () => {
                       className="p-3 rounded-lg bg-gray-50 flex justify-between items-start"
                     >
                       <div>
-                        <div className="font-medium">{activity.type}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          <UserRound className="h-4 w-4 text-movement-purple" />
+                          <span className="text-movement-purple">{activity.participantName}</span> • {activity.type}
+                        </div>
                         <div className="text-sm text-gray-600">
-                          {activity.participantName} • {activity.minutes} min • {activity.points} points
+                          {activity.minutes} min • {activity.points} points
                         </div>
                         {activity.notes && (
                           <div className="text-sm text-gray-600 mt-1">{activity.notes}</div>
