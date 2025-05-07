@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Activity } from "lucide-react";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -39,6 +40,7 @@ const Auth = () => {
   const { signIn, signUp, user, loading } = useAuth();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Show a message if user was redirected here
@@ -63,6 +65,7 @@ const Auth = () => {
       password: "",
       confirmPassword: "",
     },
+    mode: "onChange",
   });
 
   const handleLoginSubmit = async (values: LoginFormValues) => {
@@ -123,6 +126,7 @@ const Auth = () => {
                         placeholder="you@example.com" 
                         type="email" 
                         autoComplete="email"
+                        inputMode="email"
                         {...field} 
                       />
                     </FormControl>
@@ -170,6 +174,9 @@ const Auth = () => {
                       <Input 
                         placeholder="Your Name" 
                         autoComplete="name"
+                        type="text"
+                        inputMode="text"
+                        enterKeyHint="next"
                         {...field} 
                       />
                     </FormControl>
@@ -188,6 +195,8 @@ const Auth = () => {
                         placeholder="you@example.com" 
                         type="email" 
                         autoComplete="email"
+                        inputMode="email"
+                        enterKeyHint="next"
                         {...field} 
                       />
                     </FormControl>
@@ -206,6 +215,7 @@ const Auth = () => {
                         placeholder="******" 
                         type="password" 
                         autoComplete="new-password"
+                        enterKeyHint="next"
                         {...field} 
                       />
                     </FormControl>
@@ -224,6 +234,7 @@ const Auth = () => {
                         placeholder="******" 
                         type="password" 
                         autoComplete="new-password"
+                        enterKeyHint="done"
                         {...field} 
                       />
                     </FormControl>
