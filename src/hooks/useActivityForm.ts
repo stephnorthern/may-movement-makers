@@ -20,11 +20,16 @@ export function useActivityForm() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  
+  // Use the current date but ensure we're using local timezone
+  const today = new Date();
+  const localDate = today.toLocaleDateString('en-CA'); // Format as YYYY-MM-DD
+  
   const [formData, setFormData] = useState<ActivityFormData>({
     participantId: "",
     type: "",
     minutes: "",
-    date: new Date().toISOString().split("T")[0],
+    date: localDate,
     notes: ""
   });
   
@@ -116,6 +121,9 @@ export function useActivityForm() {
       
       // Parse minutes as integer
       const minutes = parseInt(formData.minutes);
+      
+      // Use the date as is without any timezone adjustments
+      // This fixes the issue where activities were getting assigned to the day before
       
       // Add the activity
       await addActivity({

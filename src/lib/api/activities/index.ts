@@ -6,4 +6,3 @@
 
 export { getActivities, getParticipantActivities } from './queries';
 export { addActivity, deleteActivity } from './mutations';
-

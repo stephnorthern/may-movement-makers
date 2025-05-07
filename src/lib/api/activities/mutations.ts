@@ -17,6 +17,9 @@ export const addActivity = async (activity: Omit<Activity, "id" | "points">): Pr
     // Generate a unique ID
     const id = crypto.randomUUID();
     
+    // Don't convert the date string to a Date object to avoid timezone issues
+    const dateToSave = activity.date;
+    
     // Try to add to Supabase first
     const { error } = await supabase
       .from('activities')
@@ -25,7 +28,7 @@ export const addActivity = async (activity: Omit<Activity, "id" | "points">): Pr
         participant_id: activity.participantId,
         description: activity.type, // Map type to description
         minutes: activity.minutes,
-        date: activity.date,
+        date: dateToSave,
         points: points
       });
     
