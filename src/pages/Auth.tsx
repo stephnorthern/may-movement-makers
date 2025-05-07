@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate, useLocation } from "react-router-dom";
@@ -65,7 +64,6 @@ const Auth = () => {
       password: "",
       confirmPassword: "",
     },
-    mode: "onChange",
   });
 
   const handleLoginSubmit = async (values: LoginFormValues) => {
