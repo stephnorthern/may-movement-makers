@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { toast } from "@/components/ui/sonner";
-import { addActivity, getParticipants } from "@/lib/local-storage";
+import { toast } from "sonner";
+import { addActivity } from "@/lib/api/activities";
+import { getParticipants } from "@/lib/api/participants";
 import { validateField, ValidationError } from "@/utils/formValidation";
 import { Participant } from "@/types";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +40,7 @@ export function useActivityForm() {
     const fetchParticipants = async () => {
       try {
         setIsLoading(true);
-        const data = getParticipants();
+        const data = await getParticipants();
         setParticipants(data);
       } catch (error) {
         toast.error("Failed to load participants. Please try again.");

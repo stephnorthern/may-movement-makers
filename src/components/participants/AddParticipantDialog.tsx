@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Team } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { addParticipant } from "@/lib/local-storage";
+import { addParticipant } from "@/lib/api/participants";
 
 interface AddParticipantDialogProps {
   teams: Team[];

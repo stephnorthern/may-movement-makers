@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { Participant, Team, Activity } from "@/types";
-import { getParticipants, getParticipantActivities } from "@/lib/api/activities";
+import { getActivities, getParticipantActivities } from "@/lib/api/activities";
+import { getParticipants } from "@/lib/api/participants";
 import { getTeams } from "@/lib/api/teams";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
