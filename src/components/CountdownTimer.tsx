@@ -48,22 +48,19 @@ const CountdownTimer = () => {
   
   return (
     <Card className="bg-gradient-to-r from-movement-purple/10 to-movement-light-purple/10 border-none shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Timer className="h-5 w-5 text-movement-purple" />
-          Challenge Countdown
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm flex items-center gap-1.5">
+          <Timer className="h-4 w-4 text-movement-purple" />
+          Challenge Ends: June 2nd, 2025
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex justify-center space-x-4 py-2">
+      <CardContent className="py-2">
+        <div className="flex justify-center space-x-2 py-1">
           <TimeUnit value={timeLeft.days} label="Days" />
           <TimeUnit value={timeLeft.hours} label="Hours" />
-          <TimeUnit value={timeLeft.minutes} label="Minutes" />
-          <TimeUnit value={timeLeft.seconds} label="Seconds" />
+          <TimeUnit value={timeLeft.minutes} label="Min" />
+          <TimeUnit value={timeLeft.seconds} label="Sec" />
         </div>
-        <p className="text-center text-sm text-gray-500 mt-2">
-          The May Movement Challenge ends on June 2nd, 2025
-        </p>
       </CardContent>
     </Card>
   );
@@ -71,10 +68,10 @@ const CountdownTimer = () => {
 
 const TimeUnit = ({ value, label }: { value: number, label: string }) => (
   <div className="flex flex-col items-center">
-    <div className="bg-movement-purple text-white text-2xl font-bold rounded-md w-14 h-14 flex items-center justify-center">
+    <div className="bg-movement-purple text-white text-lg font-bold rounded-md w-10 h-10 flex items-center justify-center">
       {value.toString().padStart(2, '0')}
     </div>
-    <span className="text-xs text-gray-500 mt-1">{label}</span>
+    <span className="text-xs text-gray-500 mt-0.5">{label}</span>
   </div>
 );
 
