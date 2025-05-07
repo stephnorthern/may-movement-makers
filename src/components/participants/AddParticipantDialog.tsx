@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Team } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -40,12 +41,9 @@ const AddParticipantDialog = ({ teams, isOpen, onOpenChange, onSuccess }: AddPar
       return;
     }
     
-    // Check for duplicate names
-    // This check is now handled within the form submission as we don't have access to participants array here
-    
     addParticipant({ 
       name: newParticipantName.trim(),
-      teamId: newParticipantTeamId || undefined
+      teamId: newParticipantTeamId && newParticipantTeamId !== "none" ? newParticipantTeamId : undefined
     });
     
     setNewParticipantName("");
@@ -88,7 +86,13 @@ const AddParticipantDialog = ({ teams, isOpen, onOpenChange, onSuccess }: AddPar
                     <SelectItem value="none">No Team</SelectItem>
                     {teams.map(team => (
                       <SelectItem key={team.id} value={team.id}>
-                        {team.name}
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: team.color }}
+                          ></div>
+                          {team.name}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
