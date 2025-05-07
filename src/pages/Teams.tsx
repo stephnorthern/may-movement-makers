@@ -4,7 +4,6 @@ import { Team, Participant } from "@/types";
 import { getTeams, getParticipants, addTeam, updateTeam, deleteTeam } from "@/lib/local-storage";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
-import CountdownTimer from "@/components/CountdownTimer";
 import TeamsList from "@/components/teams/TeamsList";
 import EmptyTeamState from "@/components/teams/EmptyTeamState";
 import TeamMembersView from "@/components/teams/TeamMembersView";
@@ -94,18 +93,13 @@ const Teams = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold gradient-text">SingleStone May Movement Challenge</h1>
-          <p className="text-gray-600">Let's get movin'!</p>
+          <h1 className="text-3xl font-bold gradient-text">Team Management</h1>
+          <p className="text-gray-600">Manage teams and their members</p>
         </div>
         <AddTeamDialog 
           onAddTeam={handleAddTeam}
           teams={teams}
         />
-      </div>
-      
-      {/* Add the countdown timer */}
-      <div className="mb-6">
-        <CountdownTimer />
       </div>
       
       <ChallengeHeader hasTeams={teamsWithTotals.length > 0} />

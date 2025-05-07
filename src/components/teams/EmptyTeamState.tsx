@@ -15,7 +15,7 @@ const EmptyTeamState = ({ onAddTeam }: EmptyTeamStateProps) => {
           <Users className="h-6 w-6 text-movement-purple" />
         </div>
         <h3 className="text-lg font-medium mb-2">No teams yet</h3>
-        <p className="text-gray-600 mb-4">Create teams to group participants together</p>
+        <p className="text-gray-600 mb-4">Create teams to group participants and track their collective progress</p>
         <Button 
           className="bg-movement-purple hover:bg-movement-dark-purple" 
           onClick={onAddTeam}
