@@ -13,6 +13,8 @@ import { Plus, Users, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EditTeamDialog } from "@/components/EditTeamDialog";
+import CountdownTimer from "@/components/CountdownTimer";
+
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -219,6 +221,11 @@ const Teams = () => {
         {renderAddTeamDialog()}
       </div>
       
+      {/* Add the countdown timer */}
+      <div className="mb-6">
+        <CountdownTimer />
+      </div>
+      
       {teamsWithTotals.length > 0 && <div className="bg-gradient-to-r from-movement-purple/10 to-movement-light-purple/10 p-4 rounded-lg mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Trophy className="h-5 w-5 text-movement-purple" />
@@ -330,4 +337,5 @@ const Teams = () => {
       {selectedTeam && <ManageMembers />}
     </div>;
 };
+
 export default Teams;
