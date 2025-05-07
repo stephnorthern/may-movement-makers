@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity, Participant, Team } from "@/types";
@@ -139,86 +140,92 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Team Standings Section - Moved higher */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-semibold">Team Standings</h2>
-                <p className="text-gray-600">Track team progress in the challenge</p>
+          {/* Main dashboard grid with teams and calendar side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            {/* Team Standings Section - Left side (wider) */}
+            <div className="md:col-span-7 space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-semibold">Team Standings</h2>
+                  <p className="text-gray-600">Track team progress in the challenge</p>
+                </div>
+                <AddTeamDialog 
+                  onAddTeam={handleAddTeam}
+                  teams={teams}
+                />
               </div>
-              <AddTeamDialog 
-                onAddTeam={handleAddTeam}
-                teams={teams}
+              
+              <ChallengeHeader hasTeams={teams.length > 0} />
+              
+              <TeamsList 
+                teams={teamsWithTotals} 
+                handleDeleteTeam={handleDeleteTeam}
+                handleUpdateTeam={handleUpdateTeam}
+                setSelectedTeam={setSelectedTeam}
+                setIsViewMembersOpen={setIsViewMembersOpen}
+                allTeams={teams}
               />
             </div>
             
-            <ChallengeHeader hasTeams={teams.length > 0} />
-            
-            <TeamsList 
-              teams={teamsWithTotals} 
-              handleDeleteTeam={handleDeleteTeam}
-              handleUpdateTeam={handleUpdateTeam}
-              setSelectedTeam={setSelectedTeam}
-              setIsViewMembersOpen={setIsViewMembersOpen}
-              allTeams={teams}
-            />
-            
-            {selectedTeam && (
-              <TeamMembersView
-                selectedTeam={selectedTeam}
-                teamMembers={teamMembers(selectedTeam.id)}
-                isViewMembersOpen={isViewMembersOpen}
-                setIsViewMembersOpen={setIsViewMembersOpen}
-                isMobile={isMobile}
-              />
-            )}
+            {/* Activity Calendar Card - Right side */}
+            <div className="md:col-span-5">
+              <Card className="h-full">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-semibold">Activity Calendar</CardTitle>
+                    <Link to="/activities">
+                      <Button variant="ghost" size="sm">
+                        <CalendarIcon className="mr-2 h-4 w-4" /> View All
+                      </Button>
+                    </Link>
+                  </div>
+                  <CardDescription>Track your exercise days</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    className="rounded-md border"
+                  />
+                  {selectedDate && (
+                    <div className="mt-2 overflow-auto max-h-48">
+                      <h4 className="font-semibold">
+                        Activities for {format(selectedDate, 'MMMM d, yyyy')}
+                      </h4>
+                      {activitiesForDate.length > 0 ? (
+                        <ul className="list-disc pl-5 mt-2">
+                          {activitiesForDate.map(activity => (
+                            <li key={activity.id} className="mb-1">
+                              <div className="flex items-center gap-1">
+                                <UserRound className="h-3 w-3 text-movement-green" />
+                                <span className="text-movement-green font-medium">{activity.participantName}</span>
+                                <span>•</span>
+                                <span>{activity.type} - {activity.minutes} minutes</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-500 mt-2">No activities for this day.</p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
           
-          {/* Activity Calendar Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold">Activity Calendar</CardTitle>
-                <Link to="/activities">
-                  <Button variant="ghost" size="sm">
-                    <CalendarIcon className="mr-2 h-4 w-4" /> View All
-                  </Button>
-                </Link>
-              </div>
-              <CardDescription>Track your exercise days</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md border"
-              />
-              {selectedDate && (
-                <div className="mt-4">
-                  <h4 className="font-semibold">
-                    Activities for {format(selectedDate, 'MMMM d, yyyy')}
-                  </h4>
-                  {activitiesForDate.length > 0 ? (
-                    <ul className="list-disc pl-5 mt-2">
-                      {activitiesForDate.map(activity => (
-                        <li key={activity.id} className="mb-1">
-                          <div className="flex items-center gap-1">
-                            <UserRound className="h-3 w-3 text-movement-green" />
-                            <span className="text-movement-green font-medium">{activity.participantName}</span>
-                            <span>•</span>
-                            <span>{activity.type} - {activity.minutes} minutes</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 mt-2">No activities for this day.</p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Team Members View Modal */}
+          {selectedTeam && (
+            <TeamMembersView
+              selectedTeam={selectedTeam}
+              teamMembers={teamMembers(selectedTeam.id)}
+              isViewMembersOpen={isViewMembersOpen}
+              setIsViewMembersOpen={setIsViewMembersOpen}
+              isMobile={isMobile}
+            />
+          )}
         </>
       )}
     </div>
