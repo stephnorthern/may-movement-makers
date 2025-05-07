@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Team, Participant } from "@/types";
 import { getTeams, getParticipants, addTeam, updateTeam, deleteTeam, assignParticipantToTeam } from "@/lib/local-storage";
@@ -46,7 +47,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Plus, Users, Trash2 } from "lucide-react";
+import { Plus, Users, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EditTeamDialog } from "@/components/EditTeamDialog";
@@ -137,6 +138,21 @@ const Teams = () => {
   const unassignedParticipants = () => {
     return participants.filter(p => !p.teamId);
   };
+
+  // Calculate team totals and sort by points
+  const teamsWithTotals = teams.map(team => {
+    const members = teamMembers(team.id);
+    const totalTeamPoints = members.reduce((sum, member) => sum + member.points, 0);
+    const totalTeamMinutes = members.reduce((sum, member) => sum + member.totalMinutes, 0);
+    
+    return {
+      ...team,
+      totalPoints: totalTeamPoints,
+      totalMinutes: totalTeamMinutes,
+      memberCount: members.length,
+      members
+    };
+  }).sort((a, b) => b.totalPoints - a.totalPoints); // Sort by total points (descending)
   
   const renderAddTeamDialog = () => {
     return (
@@ -294,103 +310,116 @@ const Teams = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold gradient-text">Teams</h1>
-          <p className="text-gray-600">View and manage challenge teams</p>
+          <h1 className="text-3xl font-bold gradient-text">May Movement Challenge</h1>
+          <p className="text-gray-600">Team leaderboard and management</p>
         </div>
         {renderAddTeamDialog()}
       </div>
       
+      {teamsWithTotals.length > 0 && (
+        <div className="bg-gradient-to-r from-movement-purple/10 to-movement-light-purple/10 p-4 rounded-lg mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Trophy className="h-5 w-5 text-movement-purple" />
+            <h2 className="font-semibold text-movement-purple">Current Standings</h2>
+          </div>
+          <p className="text-sm text-gray-600">
+            Teams are ranked by total points earned by all team members. Keep logging activities to move up!
+          </p>
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teams.map((team) => {
-          const members = teamMembers(team.id);
-          const totalTeamPoints = members.reduce((sum, member) => sum + member.points, 0);
-          const totalTeamMinutes = members.reduce((sum, member) => sum + member.totalMinutes, 0);
-          
-          return (
-            <Card key={team.id} className="overflow-hidden">
-              <div className="h-2" style={{ backgroundColor: team.color }} />
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>{team.name}</CardTitle>
-                  <div className="flex gap-2">
-                    <EditTeamDialog team={team} onUpdate={handleUpdateTeam} teams={teams} />
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => handleDeleteTeam(team.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <CardDescription>
-                  {members.length} {members.length === 1 ? "member" : "members"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex gap-4">
-                    <div className="flex-1 bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-2xl font-bold" style={{ color: team.color }}>
-                        {totalTeamPoints}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Total Points
-                      </div>
-                    </div>
-                    <div className="flex-1 bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-2xl font-bold" style={{ color: team.color }}>
-                        {totalTeamMinutes}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Total Minutes
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {members.length > 0 ? (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-600 mb-2">Team Members</h3>
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                        {members.map(member => (
-                          <div key={member.id} className="bg-gray-50 p-2 rounded text-sm">
-                            <div className="flex justify-between font-medium">
-                              <span>{member.name}</span>
-                              <span style={{ color: team.color }}>{member.points} pts</span>
-                            </div>
-                            <div className="text-gray-600 text-xs">
-                              {member.totalMinutes} minutes
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <div className="rounded-full bg-gray-100 w-10 h-10 flex items-center justify-center mx-auto mb-2">
-                        <Users className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <p className="text-sm text-gray-500">No members yet</p>
-                    </div>
+        {teamsWithTotals.map((team, index) => (
+          <Card key={team.id} className="overflow-hidden">
+            <div className="h-2" style={{ backgroundColor: team.color }} />
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {index === 0 && teamsWithTotals.length > 1 && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-yellow-100 w-6 h-6">
+                      <Trophy className="h-3 w-3 text-yellow-600" />
+                    </span>
                   )}
+                  <CardTitle>{team.name}</CardTitle>
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    setSelectedTeam(team);
-                    setIsManageMembersOpen(true);
-                  }}
-                >
-                  Manage Members
-                </Button>
-              </CardFooter>
-            </Card>
-          );
-        })}
+                <div className="flex gap-2">
+                  <EditTeamDialog team={team} onUpdate={handleUpdateTeam} teams={teams} />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => handleDeleteTeam(team.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <CardDescription>
+                {team.memberCount} {team.memberCount === 1 ? "member" : "members"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <div className="flex-1 bg-gray-50 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold" style={{ color: team.color }}>
+                      {team.totalPoints}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Total Points
+                    </div>
+                  </div>
+                  <div className="flex-1 bg-gray-50 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold" style={{ color: team.color }}>
+                      {team.totalMinutes}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Total Minutes
+                    </div>
+                  </div>
+                </div>
+                
+                {team.members.length > 0 ? (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">Team Members</h3>
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                      {team.members.map(member => (
+                        <div key={member.id} className="bg-gray-50 p-2 rounded text-sm">
+                          <div className="flex justify-between font-medium">
+                            <span>{member.name}</span>
+                            <span style={{ color: team.color }}>{member.points} pts</span>
+                          </div>
+                          <div className="text-gray-600 text-xs">
+                            {member.totalMinutes} minutes
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="rounded-full bg-gray-100 w-10 h-10 flex items-center justify-center mx-auto mb-2">
+                      <Users className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-500">No members yet</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  setSelectedTeam(team);
+                  setIsManageMembersOpen(true);
+                }}
+              >
+                Manage Members
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
         
         {teams.length === 0 && (
           <div className="col-span-full">

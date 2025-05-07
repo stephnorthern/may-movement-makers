@@ -27,7 +27,8 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route element={<MainLayout />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Teams />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/activities" element={<Activities />} />
               <Route path="/activities/new" element={<NewActivity />} />
               <Route path="/participants" element={<Participants />} />
