@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity, Participant, Team } from "@/types";
@@ -140,98 +139,8 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Leaderboard Card */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold">Leaderboard</CardTitle>
-                  <Link to="/participants">
-                    <Button variant="ghost" size="sm">
-                      <Users className="mr-2 h-4 w-4" /> View All
-                    </Button>
-                  </Link>
-                </div>
-                <CardDescription>Top participants this month</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {participants.length > 0 ? (
-                  participants.slice(0, 3).map(participant => (
-                    <div key={participant.id} className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{participant.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {participant.totalMinutes} minutes
-                        </div>
-                      </div>
-                      <div className="font-bold text-movement-green">
-                        {participant.points} points
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6">
-                    <h3 className="text-lg font-medium text-gray-800 mb-2">No participants yet</h3>
-                    <p className="text-gray-600 mb-4">Add participants to start the challenge!</p>
-                    <Link to="/participants">
-                      <Button className="bg-movement-green hover:bg-movement-dark-green">
-                        <Plus className="mr-2 h-4 w-4" /> Add Participants
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Activity Calendar Card */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold">Activity Calendar</CardTitle>
-                  <Link to="/activities">
-                    <Button variant="ghost" size="sm">
-                      <CalendarIcon className="mr-2 h-4 w-4" /> View All
-                    </Button>
-                  </Link>
-                </div>
-                <CardDescription>Track your exercise days</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="rounded-md border"
-                />
-                {selectedDate && (
-                  <div className="mt-4">
-                    <h4 className="font-semibold">
-                      Activities for {format(selectedDate, 'MMMM d, yyyy')}
-                    </h4>
-                    {activitiesForDate.length > 0 ? (
-                      <ul className="list-disc pl-5 mt-2">
-                        {activitiesForDate.map(activity => (
-                          <li key={activity.id} className="mb-1">
-                            <div className="flex items-center gap-1">
-                              <UserRound className="h-3 w-3 text-movement-green" />
-                              <span className="text-movement-green font-medium">{activity.participantName}</span>
-                              <span>•</span>
-                              <span>{activity.type} - {activity.minutes} minutes</span>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-gray-500 mt-2">No activities for this day.</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Team Standings Section */}
-          <div className="mt-10 pt-6 border-t border-gray-100">
+          {/* Team Standings Section - Moved higher */}
+          <div className="mb-6">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-semibold">Team Standings</h2>
@@ -264,6 +173,52 @@ const Dashboard = () => {
               />
             )}
           </div>
+          
+          {/* Activity Calendar Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">Activity Calendar</CardTitle>
+                <Link to="/activities">
+                  <Button variant="ghost" size="sm">
+                    <CalendarIcon className="mr-2 h-4 w-4" /> View All
+                  </Button>
+                </Link>
+              </div>
+              <CardDescription>Track your exercise days</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border"
+              />
+              {selectedDate && (
+                <div className="mt-4">
+                  <h4 className="font-semibold">
+                    Activities for {format(selectedDate, 'MMMM d, yyyy')}
+                  </h4>
+                  {activitiesForDate.length > 0 ? (
+                    <ul className="list-disc pl-5 mt-2">
+                      {activitiesForDate.map(activity => (
+                        <li key={activity.id} className="mb-1">
+                          <div className="flex items-center gap-1">
+                            <UserRound className="h-3 w-3 text-movement-green" />
+                            <span className="text-movement-green font-medium">{activity.participantName}</span>
+                            <span>•</span>
+                            <span>{activity.type} - {activity.minutes} minutes</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 mt-2">No activities for this day.</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
