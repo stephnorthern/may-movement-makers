@@ -10,7 +10,6 @@ import Dashboard from "./pages/Dashboard";
 import Activities from "./pages/Activities";
 import NewActivity from "./pages/NewActivity";
 import Participants from "./pages/Participants";
-import Teams from "./pages/Teams";
 import Calendar from "./pages/Calendar";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -32,7 +31,6 @@ const App = () => (
               <Route path="/activities" element={<Activities />} />
               <Route path="/activities/new" element={<NewActivity />} />
               <Route path="/participants" element={<Participants />} />
-              <Route path="/teams" element={<Teams />} />
               <Route path="/calendar" element={<Calendar />} />
             </Route>
             <Route path="*" element={<NotFound />} />
