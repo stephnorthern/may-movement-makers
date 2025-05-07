@@ -9,6 +9,7 @@ import EmptyTeamState from "@/components/teams/EmptyTeamState";
 import TeamMembersView from "@/components/teams/TeamMembersView";
 import AddTeamDialog from "@/components/teams/AddTeamDialog";
 import ChallengeHeader from "@/components/teams/ChallengeHeader";
+import CountdownTimer from "@/components/CountdownTimer";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -93,13 +94,12 @@ const Teams = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold gradient-text">Team Management</h1>
-          <p className="text-gray-600">Manage teams and their members</p>
+          <h1 className="text-3xl font-bold gradient-text">May Movement Challenge</h1>
+          <p className="text-gray-600">Track your progress and stay motivated!</p>
         </div>
-        <AddTeamDialog 
-          onAddTeam={handleAddTeam}
-          teams={teams}
-        />
+        <div className="w-56">
+          <CountdownTimer />
+        </div>
       </div>
       
       <ChallengeHeader hasTeams={teamsWithTotals.length > 0} />
