@@ -16,6 +16,7 @@ export type Database = {
           id: string
           minutes: number
           participant_id: string
+          points: number
         }
         Insert: {
           date?: string
@@ -23,6 +24,7 @@ export type Database = {
           id: string
           minutes: number
           participant_id: string
+          points: number
         }
         Update: {
           date?: string
@@ -30,6 +32,7 @@ export type Database = {
           id?: string
           minutes?: number
           participant_id?: string
+          points?: number
         }
         Relationships: [
           {

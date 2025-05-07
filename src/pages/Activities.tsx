@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity } from "@/types";
-import { getActivities, deleteActivity } from "@/lib/local-storage";
+import { getActivities, deleteActivity } from "@/lib/api/activities";
 import { 
   Card, 
   CardContent, 

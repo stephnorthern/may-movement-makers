@@ -22,7 +22,7 @@ export const getActivities = async (): Promise<Activity[]> => {
         date,
         points
       `)
-      .order('created_at', { ascending: false });
+      .order('date', { ascending: false });
     
     if (error) {
       console.error("Error fetching from Supabase:", error);
@@ -75,7 +75,7 @@ export const getParticipantActivities = async (participantId: string): Promise<A
         points
       `)
       .eq('participant_id', participantId)
-      .order('created_at', { ascending: false });
+      .order('date', { ascending: false });
     
     if (error) {
       console.error("Error fetching from Supabase:", error);
@@ -119,10 +119,14 @@ export const addActivity = async (activity: Omit<Activity, "id" | "points">): Pr
   const points = calculatePoints(activity.minutes);
   
   try {
+    // Generate a unique ID
+    const id = crypto.randomUUID();
+    
     // Try to add to Supabase first
     const { error } = await supabase
       .from('activities')
       .insert({
+        id: id,
         participant_id: activity.participantId,
         description: activity.type, // Map type to description
         minutes: activity.minutes,

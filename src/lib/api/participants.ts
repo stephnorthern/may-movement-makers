@@ -76,7 +76,7 @@ export const updateParticipantStatsInSupabase = async (participantId: string, ad
     // First get the current participant's stats
     const { data: participant, error: fetchError } = await supabase
       .from('participants')
-      .select('total_minutes, points')
+      .select('total_minutes')
       .eq('id', participantId)
       .single();
     
@@ -85,16 +85,15 @@ export const updateParticipantStatsInSupabase = async (participantId: string, ad
       throw fetchError;
     }
     
+    // Calculate new values
     const additionalPoints = calculatePoints(additionalMinutes);
     const newTotalMinutes = (participant?.total_minutes || 0) + additionalMinutes;
-    const newPoints = (participant?.points || 0) + additionalPoints;
     
     // Update the participant's stats
     const { error: updateError } = await supabase
       .from('participants')
       .update({
-        total_minutes: Math.max(0, newTotalMinutes), // Prevent negative values
-        points: Math.max(0, newPoints) // Prevent negative values
+        total_minutes: Math.max(0, newTotalMinutes) // Prevent negative values
       })
       .eq('id', participantId);
     
