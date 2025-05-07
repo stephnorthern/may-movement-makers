@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Users, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Users, Plus, UserRound } from "lucide-react";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 import TeamsList from "@/components/teams/TeamsList";
@@ -211,8 +211,13 @@ const Dashboard = () => {
                     {activitiesForDate.length > 0 ? (
                       <ul className="list-disc pl-5 mt-2">
                         {activitiesForDate.map(activity => (
-                          <li key={activity.id}>
-                            {activity.type} - {activity.minutes} minutes
+                          <li key={activity.id} className="mb-1">
+                            <div className="flex items-center gap-1">
+                              <UserRound className="h-3 w-3 text-movement-purple" />
+                              <span className="text-movement-purple font-medium">{activity.participantName}</span>
+                              <span>•</span>
+                              <span>{activity.type} - {activity.minutes} minutes</span>
+                            </div>
                           </li>
                         ))}
                       </ul>
