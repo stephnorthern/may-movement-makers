@@ -135,7 +135,7 @@ const Dashboard = () => {
       
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-purple border-t-transparent"></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-green border-t-transparent"></div>
           <p className="mt-2 text-gray-600">Loading data...</p>
         </div>
       ) : (
@@ -164,7 +164,7 @@ const Dashboard = () => {
                           {participant.totalMinutes} minutes
                         </div>
                       </div>
-                      <div className="font-bold text-movement-purple">
+                      <div className="font-bold text-movement-green">
                         {participant.points} points
                       </div>
                     </div>
@@ -174,7 +174,7 @@ const Dashboard = () => {
                     <h3 className="text-lg font-medium text-gray-800 mb-2">No participants yet</h3>
                     <p className="text-gray-600 mb-4">Add participants to start the challenge!</p>
                     <Link to="/participants">
-                      <Button className="bg-movement-purple hover:bg-movement-dark-purple">
+                      <Button className="bg-movement-green hover:bg-movement-dark-green">
                         <Plus className="mr-2 h-4 w-4" /> Add Participants
                       </Button>
                     </Link>
@@ -213,8 +213,8 @@ const Dashboard = () => {
                         {activitiesForDate.map(activity => (
                           <li key={activity.id} className="mb-1">
                             <div className="flex items-center gap-1">
-                              <UserRound className="h-3 w-3 text-movement-purple" />
-                              <span className="text-movement-purple font-medium">{activity.participantName}</span>
+                              <UserRound className="h-3 w-3 text-movement-green" />
+                              <span className="text-movement-green font-medium">{activity.participantName}</span>
                               <span>•</span>
                               <span>{activity.type} - {activity.minutes} minutes</span>
                             </div>

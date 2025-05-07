@@ -119,7 +119,7 @@ const Calendar = () => {
           <p className="text-gray-600">View team performance by date</p>
         </div>
         <Link to="/activities/new">
-          <Button className="bg-movement-purple hover:bg-movement-dark-purple">
+          <Button className="bg-movement-green hover:bg-movement-dark-green">
             <Plus className="mr-2 h-4 w-4" /> Log Activity
           </Button>
         </Link>
@@ -127,7 +127,7 @@ const Calendar = () => {
       
       {isLoading || isTeamsLoading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-purple border-t-transparent"></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-green border-t-transparent"></div>
           <p className="mt-2 text-gray-600">Loading data...</p>
         </div>
       ) : (
@@ -136,7 +136,7 @@ const Calendar = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-movement-purple" />
+                  <CalendarIcon className="h-5 w-5 text-movement-green" />
                   May Movement
                 </CardTitle>
               </CardHeader>
@@ -151,7 +151,7 @@ const Calendar = () => {
                   }}
                   modifiersStyles={{
                     highlighted: {
-                      backgroundColor: "rgb(229, 222, 255)",
+                      backgroundColor: "rgb(232, 245, 233)",
                       fontWeight: "bold"
                     },
                   }}
@@ -161,7 +161,7 @@ const Calendar = () => {
                 <div className="mt-4 text-sm text-center text-gray-600">
                   <p>May 1 - June 2, 2025</p>
                   <p className="flex items-center justify-center gap-2 mt-2">
-                    <span className="w-3 h-3 bg-movement-light-purple rounded-full"></span>
+                    <span className="w-3 h-3 bg-movement-light-green rounded-full"></span>
                     <span>Dates with recorded activities</span>
                   </p>
                 </div>

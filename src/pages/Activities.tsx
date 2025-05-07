@@ -88,7 +88,7 @@ const Activities = () => {
           <p className="text-gray-600">View and manage all logged exercises</p>
         </div>
         <Link to="/activities/new">
-          <Button className="bg-movement-purple hover:bg-movement-dark-purple">
+          <Button className="bg-movement-green hover:bg-movement-dark-green">
             <Plus className="mr-2 h-4 w-4" /> Log Activity
           </Button>
         </Link>
@@ -96,7 +96,7 @@ const Activities = () => {
       
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-purple border-t-transparent"></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-green border-t-transparent"></div>
           <p className="mt-2 text-gray-600">Loading activities...</p>
         </div>
       ) : activities.length > 0 ? (
@@ -105,7 +105,7 @@ const Activities = () => {
             <Card key={date}>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-movement-purple" />
+                  <Calendar className="h-5 w-5 text-movement-green" />
                   <CardTitle className="text-lg">
                     {format(new Date(date), 'MMMM d, yyyy')}
                   </CardTitle>
@@ -123,8 +123,8 @@ const Activities = () => {
                     >
                       <div>
                         <div className="font-medium flex items-center gap-2">
-                          <UserRound className="h-4 w-4 text-movement-purple" />
-                          <span className="text-movement-purple">{activity.participantName}</span> • {activity.type}
+                          <UserRound className="h-4 w-4 text-movement-green" />
+                          <span className="text-movement-green">{activity.participantName}</span> • {activity.type}
                         </div>
                         <div className="text-sm text-gray-600">
                           {activity.minutes} min • {activity.points} points
@@ -151,13 +151,13 @@ const Activities = () => {
       ) : (
         <Card className="bg-gray-50 border-dashed">
           <CardContent className="pt-6 text-center">
-            <div className="rounded-full bg-movement-light-purple w-12 h-12 flex items-center justify-center mx-auto mb-4">
-              <Calendar className="h-6 w-6 text-movement-purple" />
+            <div className="rounded-full bg-movement-light-green w-12 h-12 flex items-center justify-center mx-auto mb-4">
+              <Calendar className="h-6 w-6 text-movement-green" />
             </div>
             <h3 className="text-lg font-medium mb-2">No activities yet</h3>
             <p className="text-gray-600 mb-4">Start tracking your exercise to earn points!</p>
             <Link to="/activities/new">
-              <Button className="bg-movement-purple hover:bg-movement-dark-purple">
+              <Button className="bg-movement-green hover:bg-movement-dark-green">
                 <Plus className="mr-2 h-4 w-4" /> Log Your First Activity
               </Button>
             </Link>

@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 260 75% 75%;
+    --primary: 120 39% 49%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -23,7 +23,7 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 260 96% 95%;
+    --accent: 120 40% 93%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -31,7 +31,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 260 75% 75%;
+    --ring: 120 39% 49%;
 
     --radius: 0.5rem;
 
@@ -55,7 +55,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 260 75% 75%;
+    --primary: 120 39% 49%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -96,6 +96,6 @@
 
 @layer components {
   .gradient-text {
-    @apply bg-gradient-to-r from-movement-purple to-movement-dark-purple bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-movement-green to-movement-dark-green bg-clip-text text-transparent;
   }
 }

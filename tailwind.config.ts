@@ -67,7 +67,9 @@ export default {
 				"movement-purple": "#9b87f5",
 				"movement-dark-purple": "#7E69AB",
 				"movement-light-purple": "#E5DEFF",
-				"movement-green": "#F2FCE2",
+				"movement-green": "#4CAF50",  // Updated to a vibrant green
+				"movement-dark-green": "#2E7D32", // Added dark green
+				"movement-light-green": "#E8F5E9", // Updated to light green
 				"movement-yellow": "#FEF7CD"
 			},
 			borderRadius: {
