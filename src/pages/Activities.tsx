@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity } from "@/types";
@@ -22,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar, Plus, UserRound } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 const Activities = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -69,8 +68,15 @@ const Activities = () => {
       console.error("Error deleting activity:", error);
     }
   };
+
+  // Format date function that ensures dates are displayed correctly without timezone issues
+  const formatActivityDate = (dateString: string) => {
+    // Parse the date string as is (in format YYYY-MM-DD) without timezone conversion
+    const date = parseISO(dateString);
+    return format(date, 'MMMM d, yyyy');
+  };
   
-  // Group activities by date
+  // Group activities by date - using the original date string to avoid timezone issues
   const activitiesByDate: Record<string, Activity[]> = {};
   activities.forEach(activity => {
     const date = activity.date;
@@ -107,7 +113,7 @@ const Activities = () => {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-movement-green" />
                   <CardTitle className="text-lg">
-                    {format(new Date(date), 'MMMM d, yyyy')}
+                    {formatActivityDate(date)}
                   </CardTitle>
                 </div>
                 <CardDescription>

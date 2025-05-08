@@ -45,6 +45,9 @@ export const getActivities = async (): Promise<Activity[]> => {
     return supabaseActivities.map(a => {
       const participant = participantsMap.get(a.participant_id) || { name: "Unknown" };
       
+      // Extract just the YYYY-MM-DD part without any timezone conversions
+      const dateString = a.date ? a.date.split('T')[0] : "";
+      
       return {
         id: a.id,
         participantId: a.participant_id,
@@ -52,7 +55,7 @@ export const getActivities = async (): Promise<Activity[]> => {
         type: a.description, // Map description to type
         minutes: a.minutes,
         points: a.points || calculatePoints(a.minutes),
-        date: a.date.split('T')[0], // Format date
+        date: dateString, // Format date correctly without timezone issues
         notes: ""  // No notes field in our DB yet
       };
     });
@@ -101,6 +104,9 @@ export const getParticipantActivities = async (participantId: string): Promise<A
 
     // Map Supabase data to our Activity type
     return supabaseActivities.map(a => {
+      // Extract just the YYYY-MM-DD part without any timezone conversions
+      const dateString = a.date ? a.date.split('T')[0] : "";
+      
       return {
         id: a.id,
         participantId: a.participant_id,
@@ -108,7 +114,7 @@ export const getParticipantActivities = async (participantId: string): Promise<A
         type: a.description, // Map description to type
         minutes: a.minutes,
         points: a.points || calculatePoints(a.minutes),
-        date: a.date.split('T')[0], // Format date
+        date: dateString, // Format date correctly
         notes: ""  // No notes field in our DB yet
       };
     });
