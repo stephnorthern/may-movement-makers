@@ -1,17 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity, Participant, Team } from "@/types";
 import { getActivities } from "@/lib/api/activities";
 import { getParticipants } from "@/lib/api/participants";
 import { getTeams, addTeam, updateTeam, deleteTeam } from "@/lib/api/teams";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, Users, Plus, UserRound } from "lucide-react";
@@ -23,7 +16,6 @@ import TeamMembersView from "@/components/teams/TeamMembersView";
 import AddTeamDialog from "@/components/teams/AddTeamDialog";
 import ChallengeHeader from "@/components/teams/ChallengeHeader";
 import CountdownTimer from "@/components/CountdownTimer";
-
 const Dashboard = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -38,24 +30,20 @@ const Dashboard = () => {
   } | null>(null);
   const [isViewMembersOpen, setIsViewMembersOpen] = useState(false);
   const isMobile = useIsMobile();
-  
   const loadData = async () => {
     setIsLoading(true);
     try {
       const activitiesData = await getActivities();
       const participantsData = await getParticipants();
       const teamsData = await getTeams();
-      
+
       // Sort activities by date (newest first)
-      const sortedActivities = [...activitiesData].sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      const sortedActivities = [...activitiesData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setActivities(sortedActivities);
-      
+
       // Sort participants by points (highest first)
       const sortedParticipants = [...participantsData].sort((a, b) => b.points - a.points);
       setParticipants(sortedParticipants);
-      
       setTeams(teamsData);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -63,29 +51,21 @@ const Dashboard = () => {
       setIsLoading(false);
     }
   };
-  
   useEffect(() => {
     loadData();
-    
+
     // Listen for storage changes
     const handleStorageChange = () => {
       loadData();
     };
-    
     window.addEventListener("storage", handleStorageChange);
-    
     return () => {
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
-  
+
   // Get activities for the selected date
-  const activitiesForDate = selectedDate
-    ? activities.filter(
-        activity => activity.date === selectedDate.toISOString().split('T')[0]
-      )
-    : [];
-    
+  const activitiesForDate = selectedDate ? activities.filter(activity => activity.date === selectedDate.toISOString().split('T')[0]) : [];
   const handleAddTeam = (name: string, color: string) => {
     addTeam({
       name,
@@ -93,14 +73,12 @@ const Dashboard = () => {
     });
     loadData();
   };
-
   const handleDeleteTeam = (teamId: string) => {
     if (confirm("Are you sure you want to delete this team? All members will be removed from the team.")) {
       deleteTeam(teamId);
       loadData();
     }
   };
-
   const handleUpdateTeam = (teamId: string, name: string, color: string) => {
     updateTeam(teamId, {
       name,
@@ -108,7 +86,6 @@ const Dashboard = () => {
     });
     loadData();
   };
-
   const teamMembers = (teamId: string) => {
     return participants.filter(p => p.teamId === teamId);
   };
@@ -126,11 +103,10 @@ const Dashboard = () => {
       members
     };
   }).sort((a, b) => b.totalPoints - a.totalPoints); // Sort by total points (descending)
-  
-  return (
-    <div className="space-y-6">
+
+  return <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-4xl font-bold gradient-text">May Movement Challenge</h1>
+        <h1 className="text-4xl font-bold gradient-text">SingleStone May Movement Challenge</h1>
         <p className="text-gray-600">Track your progress and stay motivated!</p>
       </div>
       
@@ -139,13 +115,10 @@ const Dashboard = () => {
         <CountdownTimer />
       </div>
       
-      {isLoading ? (
-        <div className="text-center py-12">
+      {isLoading ? <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-green border-t-transparent"></div>
           <p className="mt-2 text-gray-600">Loading data...</p>
-        </div>
-      ) : (
-        <>
+        </div> : <>
           {/* Main dashboard grid with teams and calendar side by side */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {/* Team Standings Section - Left side (wider) */}
@@ -155,22 +128,12 @@ const Dashboard = () => {
                   <h2 className="text-2xl font-semibold">Team Standings</h2>
                   <p className="text-gray-600">Track team progress in the challenge</p>
                 </div>
-                <AddTeamDialog 
-                  onAddTeam={handleAddTeam}
-                  teams={teams}
-                />
+                <AddTeamDialog onAddTeam={handleAddTeam} teams={teams} />
               </div>
               
               <ChallengeHeader hasTeams={teams.length > 0} />
               
-              <TeamsList 
-                teams={teamsWithTotals} 
-                handleDeleteTeam={handleDeleteTeam}
-                handleUpdateTeam={handleUpdateTeam}
-                setSelectedTeam={setSelectedTeam}
-                setIsViewMembersOpen={setIsViewMembersOpen}
-                allTeams={teams}
-              />
+              <TeamsList teams={teamsWithTotals} handleDeleteTeam={handleDeleteTeam} handleUpdateTeam={handleUpdateTeam} setSelectedTeam={setSelectedTeam} setIsViewMembersOpen={setIsViewMembersOpen} allTeams={teams} />
             </div>
             
             {/* Activity Calendar Card - Right side */}
@@ -188,54 +151,30 @@ const Dashboard = () => {
                   <CardDescription>Track your exercise days</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    className="rounded-md border"
-                  />
-                  {selectedDate && (
-                    <div className="mt-2 overflow-auto max-h-48">
+                  <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} className="rounded-md border" />
+                  {selectedDate && <div className="mt-2 overflow-auto max-h-48">
                       <h4 className="font-semibold">
                         Activities for {format(selectedDate, 'MMMM d, yyyy')}
                       </h4>
-                      {activitiesForDate.length > 0 ? (
-                        <ul className="list-disc pl-5 mt-2">
-                          {activitiesForDate.map(activity => (
-                            <li key={activity.id} className="mb-1">
+                      {activitiesForDate.length > 0 ? <ul className="list-disc pl-5 mt-2">
+                          {activitiesForDate.map(activity => <li key={activity.id} className="mb-1">
                               <div className="flex items-center gap-1">
                                 <UserRound className="h-3 w-3 text-movement-green" />
                                 <span className="text-movement-green font-medium">{activity.participantName}</span>
                                 <span>•</span>
                                 <span>{activity.type} - {activity.minutes} minutes</span>
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-gray-500 mt-2">No activities for this day.</p>
-                      )}
-                    </div>
-                  )}
+                            </li>)}
+                        </ul> : <p className="text-gray-500 mt-2">No activities for this day.</p>}
+                    </div>}
                 </CardContent>
               </Card>
             </div>
           </div>
           
           {/* Team Members View Modal */}
-          {selectedTeam && (
-            <TeamMembersView
-              selectedTeam={selectedTeam}
-              teamMembers={teamMembers(selectedTeam.id)}
-              isViewMembersOpen={isViewMembersOpen}
-              setIsViewMembersOpen={setIsViewMembersOpen}
-              isMobile={isMobile}
-            />
-          )}
-        </>
-      )}
-    </div>
-  );
+          {selectedTeam && <TeamMembersView selectedTeam={selectedTeam} teamMembers={teamMembers(selectedTeam.id)} isViewMembersOpen={isViewMembersOpen} setIsViewMembersOpen={setIsViewMembersOpen} isMobile={isMobile} />}
+        </>}
+    </div>;
 };
-
 export default Dashboard;
