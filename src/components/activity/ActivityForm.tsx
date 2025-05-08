@@ -14,6 +14,7 @@ import { ACTIVITY_TYPES } from "@/constants/activities";
 import { ActivityFormData } from "@/hooks/useActivityForm";
 import { Participant } from "@/types";
 import { ValidationError } from "@/utils/formValidation";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ActivityFormProps {
   formData: ActivityFormData;
@@ -48,12 +49,14 @@ export const ActivityForm = ({
           <SelectTrigger id="participant" className={errors.participantId ? "border-red-500" : ""}>
             <SelectValue placeholder="Select participant" />
           </SelectTrigger>
-          <SelectContent>
-            {participants.map(participant => (
-              <SelectItem key={participant.id} value={participant.id}>
-                {participant.name}
-              </SelectItem>
-            ))}
+          <SelectContent className="max-h-[200px]">
+            <ScrollArea className="h-[200px]">
+              {participants.map(participant => (
+                <SelectItem key={participant.id} value={participant.id}>
+                  {participant.name}
+                </SelectItem>
+              ))}
+            </ScrollArea>
           </SelectContent>
         </Select>
         {errors.participantId && (
@@ -72,11 +75,13 @@ export const ActivityForm = ({
             <SelectValue placeholder="Select activity type" />
           </SelectTrigger>
           <SelectContent>
-            {ACTIVITY_TYPES.map(type => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
-            ))}
+            <ScrollArea className="h-[200px]">
+              {ACTIVITY_TYPES.map(type => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </ScrollArea>
           </SelectContent>
         </Select>
         {errors.type && (
@@ -146,7 +151,7 @@ export const ActivityForm = ({
         </Button>
         <Button 
           type="submit"
-          className="bg-movement-purple hover:bg-movement-dark-purple flex-1"
+          className="bg-movement-green hover:bg-movement-dark-green flex-1"
           disabled={isSaving}
         >
           {isSaving ? (
