@@ -22,6 +22,7 @@ import EmptyTeamState from "@/components/teams/EmptyTeamState";
 import TeamMembersView from "@/components/teams/TeamMembersView";
 import AddTeamDialog from "@/components/teams/AddTeamDialog";
 import ChallengeHeader from "@/components/teams/ChallengeHeader";
+import CountdownTimer from "@/components/CountdownTimer";
 
 const Dashboard = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -131,6 +132,11 @@ const Dashboard = () => {
       <div className="text-center">
         <h1 className="text-4xl font-bold gradient-text">May Movement Challenge</h1>
         <p className="text-gray-600">Track your progress and stay motivated!</p>
+      </div>
+      
+      {/* Countdown Timer */}
+      <div className="max-w-md mx-auto">
+        <CountdownTimer />
       </div>
       
       {isLoading ? (
