@@ -1,4 +1,3 @@
-
 import { Participant, Team } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { assignParticipantToTeam } from "@/lib/local-storage";
+import { assignParticipantToTeam } from "@/lib/api/participants";
 
 interface TeamAssignmentDialogProps {
   teams: Team[];
