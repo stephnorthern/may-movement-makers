@@ -46,7 +46,10 @@ export const getActivities = async (): Promise<Activity[]> => {
       const participant = participantsMap.get(a.participant_id) || { name: "Unknown" };
       
       // Extract just the YYYY-MM-DD part without any timezone conversions
+      // This ensures the date is consistent across different timezones
       const dateString = a.date ? a.date.split('T')[0] : "";
+      
+      console.log('Raw date from DB:', a.date, 'Parsed date:', dateString);
       
       return {
         id: a.id,
@@ -106,6 +109,8 @@ export const getParticipantActivities = async (participantId: string): Promise<A
     return supabaseActivities.map(a => {
       // Extract just the YYYY-MM-DD part without any timezone conversions
       const dateString = a.date ? a.date.split('T')[0] : "";
+      
+      console.log('Raw participant activity date from DB:', a.date, 'Parsed date:', dateString);
       
       return {
         id: a.id,

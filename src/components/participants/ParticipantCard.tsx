@@ -26,11 +26,18 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
 
   // Helper function to format date in a user-friendly way
   const formatActivityDate = (dateString: string): string => {
+    // For debugging - log the date being formatted and its type
+    console.log('Formatting date:', dateString, 'Type:', typeof dateString);
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of day for comparison
     
     const activityDate = new Date(dateString);
     activityDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    
+    // Log the activity date for debugging
+    console.log('Activity date:', activityDate, 'Today:', today);
+    console.log('Activity timestamp:', activityDate.getTime(), 'Today timestamp:', today.getTime());
     
     // Check if date is today
     if (activityDate.getTime() === today.getTime()) {
@@ -48,22 +55,42 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Get activities from the last 3 days only (today to 2 days ago)
+  // Get activities from the last 3 days (including today)
   const getRecentActivities = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    console.log('Current time:', now);
     
+    // Set today to the start of the day (midnight)
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    console.log('Start of today:', today);
+    
+    // Calculate two days ago from now
     const twoDaysAgo = new Date(today);
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    console.log('Two days ago:', twoDaysAgo);
     
-    return sortedActivities.filter(activity => {
+    // Filter activities within the last 3 days
+    const filteredActivities = sortedActivities.filter(activity => {
+      // Log the activity date for debugging
+      console.log('Activity date (raw):', activity.date);
+      
+      // Parse the activity date
       const activityDate = new Date(activity.date);
-      activityDate.setHours(0, 0, 0, 0);
+      activityDate.setHours(0, 0, 0, 0);  // Set to start of day
+      
+      console.log('Activity date (parsed):', activityDate);
+      console.log('Is recent?', activityDate >= twoDaysAgo);
+      
+      // Include the activity if it's from today or up to 2 days ago
       return activityDate >= twoDaysAgo;
     });
+    
+    console.log('Filtered activities count:', filteredActivities.length);
+    return filteredActivities;
   };
   
-  // Get recent activities (last 3 days)
+  // Get recent activities (last 3 days including today)
   const recentActivities = getRecentActivities();
 
   return (
