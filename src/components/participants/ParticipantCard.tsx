@@ -1,4 +1,3 @@
-
 import { Participant, Activity, Team } from "@/types";
 import { 
   Card, 
@@ -20,8 +19,33 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
   // Sort activities by date (newest first) before rendering
   const sortedActivities = [...activities].sort((a, b) => {
     // Compare dates using timestamp to ensure correct ordering
+    // Convert string dates to Date objects for proper comparison
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
+
+  // Helper function to format date in a user-friendly way
+  const formatActivityDate = (dateString: string): string => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    
+    const activityDate = new Date(dateString);
+    activityDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    
+    // Check if date is today
+    if (activityDate.getTime() === today.getTime()) {
+      return "Today";
+    }
+    
+    // Check if date is yesterday
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (activityDate.getTime() === yesterday.getTime()) {
+      return "Yesterday";
+    }
+    
+    // Otherwise return the date
+    return new Date(dateString).toLocaleDateString();
+  };
 
   return (
     <Card key={participant.id} className="overflow-hidden">
@@ -94,7 +118,7 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
                         <span className="text-movement-purple">+{activity.points} pts</span>
                       </div>
                       <div className="text-gray-600 text-xs">
-                        {activity.minutes} min • {new Date(activity.date).toLocaleDateString()}
+                        {activity.minutes} min • {formatActivityDate(activity.date)}
                       </div>
                     </div>
                   ))}
