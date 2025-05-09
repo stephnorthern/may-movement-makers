@@ -19,6 +19,7 @@ interface ParticipantCardProps {
 const ParticipantCard = ({ participant, activities, team, onTeamChange }: ParticipantCardProps) => {
   // Sort activities by date (newest first) before rendering
   const sortedActivities = [...activities].sort((a, b) => {
+    // Compare dates using timestamp to ensure correct ordering
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
