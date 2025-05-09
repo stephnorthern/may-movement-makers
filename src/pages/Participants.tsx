@@ -12,6 +12,7 @@ import ParticipantCard from "@/components/participants/ParticipantCard";
 import EmptyParticipantsList from "@/components/participants/EmptyParticipantsList";
 import AddParticipantDialog from "@/components/participants/AddParticipantDialog";
 import TeamAssignmentDialog from "@/components/participants/TeamAssignmentDialog";
+import LoadingIndicator from "@/components/dashboard/LoadingIndicator";
 
 const Participants = () => {
   const {
@@ -28,12 +29,7 @@ const Participants = () => {
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   
   if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-movement-purple border-t-transparent"></div>
-        <p className="mt-2 text-gray-600">Loading participants...</p>
-      </div>
-    );
+    return <LoadingIndicator />;
   }
   
   const handleTeamDialogOpen = (participant: Participant) => {
