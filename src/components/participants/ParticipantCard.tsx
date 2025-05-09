@@ -1,3 +1,4 @@
+
 import { Participant, Activity, Team } from "@/types";
 import { 
   Card, 
@@ -46,6 +47,24 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
     // Otherwise return the date
     return new Date(dateString).toLocaleDateString();
   };
+
+  // Get activities from the last 3 days only (today to 2 days ago)
+  const getRecentActivities = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
+    return sortedActivities.filter(activity => {
+      const activityDate = new Date(activity.date);
+      activityDate.setHours(0, 0, 0, 0);
+      return activityDate >= twoDaysAgo;
+    });
+  };
+  
+  // Get recent activities (last 3 days)
+  const recentActivities = getRecentActivities();
 
   return (
     <Card key={participant.id} className="overflow-hidden">
@@ -105,24 +124,26 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
             </Button>
           </div>
           
-          {sortedActivities.length > 0 && (
+          {recentActivities.length > 0 ? (
             <div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Activities</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Activities (Last 3 Days)</h3>
               <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                {sortedActivities
-                  .slice(0, 3)
-                  .map(activity => (
-                    <div key={activity.id} className="bg-gray-50 p-2 rounded text-sm">
-                      <div className="flex justify-between font-medium">
-                        <span>{activity.type}</span>
-                        <span className="text-movement-purple">+{activity.points} pts</span>
-                      </div>
-                      <div className="text-gray-600 text-xs">
-                        {activity.minutes} min • {formatActivityDate(activity.date)}
-                      </div>
+                {recentActivities.map(activity => (
+                  <div key={activity.id} className="bg-gray-50 p-2 rounded text-sm">
+                    <div className="flex justify-between font-medium">
+                      <span>{activity.type}</span>
+                      <span className="text-movement-purple">+{activity.points} pts</span>
                     </div>
-                  ))}
+                    <div className="text-gray-600 text-xs">
+                      {activity.minutes} min • {formatActivityDate(activity.date)}
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 text-sm py-2">
+              No activities in the last 3 days
             </div>
           )}
         </div>
