@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getActivities, getParticipantActivities } from "@/lib/api/activities";
 import { getParticipants } from "@/lib/api/participants";
 import { getTeams } from "@/lib/api/teams";
@@ -37,6 +37,10 @@ export const useParticipants = () => {
       const teamMembersData = await loadTeamMembersData();
       const teamsData = await loadTeamsData();
       const activitiesData = await loadActivitiesData();
+      
+      if (!participantsData || !teamsData) {
+        throw new Error("Failed to load essential data");
+      }
       
       // Calculate points for each participant
       const participantsWithPoints = participantsData.map(participant => {
@@ -79,18 +83,23 @@ export const useParticipants = () => {
           activitiesMap[participant.id] = activities;
         } catch (e) {
           console.error(`Error processing activities for participant ${participant.id}:`, e);
+          activitiesMap[participant.id] = []; // Set empty array when activities fail to load
         }
       }
       
       setParticipantActivities(activitiesMap);
     } catch (error) {
       console.error("Error loading data:", error);
-      toast.error("Failed to load data");
+      toast.error("Failed to load data, trying fallback method");
       
       // Fall back to original implementation if Supabase fails
       try {
         const participantsData = await getParticipants();
         const teamsData = await getTeams();
+        
+        if (!participantsData || !teamsData) {
+          throw new Error("Failed to load data from fallback");
+        }
         
         // Sort by points (highest first)
         const sortedData = [...participantsData].sort((a, b) => b.points - a.points);
@@ -100,8 +109,13 @@ export const useParticipants = () => {
         // Load activities for each participant
         const activitiesMap = {};
         for (const participant of participantsData) {
-          const activities = await getParticipantActivities(participant.id);
-          activitiesMap[participant.id] = activities;
+          try {
+            const activities = await getParticipantActivities(participant.id);
+            activitiesMap[participant.id] = activities;
+          } catch (fallbackActivityError) {
+            console.error(`Error loading activities for participant ${participant.id}:`, fallbackActivityError);
+            activitiesMap[participant.id] = []; // Set empty array when activities fail to load
+          }
         }
         setParticipantActivities(activitiesMap);
       } catch (fallbackError) {

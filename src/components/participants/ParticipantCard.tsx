@@ -1,4 +1,3 @@
-
 import { Participant, Activity, Team } from "@/types";
 import { 
   Card, 
@@ -19,74 +18,54 @@ interface ParticipantCardProps {
 const ParticipantCard = ({ participant, activities, team, onTeamChange }: ParticipantCardProps) => {
   // Sort activities by date (newest first) before rendering
   const sortedActivities = [...activities].sort((a, b) => {
-    // Compare dates using timestamp to ensure correct ordering
-    // Convert string dates to Date objects for proper comparison
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
   // Helper function to format date in a user-friendly way
   const formatActivityDate = (dateString: string): string => {
-    // For debugging - log the date being formatted and its type
-    console.log('Formatting date:', dateString, 'Type:', typeof dateString);
-    
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of day for comparison
     
     const activityDate = new Date(dateString);
     activityDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
     
-    // Log the activity date for debugging
-    console.log('Activity date:', activityDate, 'Today:', today);
-    console.log('Activity timestamp:', activityDate.getTime(), 'Today timestamp:', today.getTime());
-    
     // Check if date is today
-    if (activityDate.getTime() === today.getTime()) {
+    if (activityDate.toDateString() === today.toDateString()) {
       return "Today";
     }
     
     // Check if date is yesterday
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (activityDate.getTime() === yesterday.getTime()) {
+    if (activityDate.toDateString() === yesterday.toDateString()) {
       return "Yesterday";
     }
     
     // Otherwise return the date
-    return new Date(dateString).toLocaleDateString();
+    return activityDate.toLocaleDateString();
   };
 
   // Get activities from the last 3 days (including today)
   const getRecentActivities = () => {
     const now = new Date();
-    console.log('Current time:', now);
     
     // Set today to the start of the day (midnight)
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
-    console.log('Start of today:', today);
     
     // Calculate two days ago from now
     const twoDaysAgo = new Date(today);
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    console.log('Two days ago:', twoDaysAgo);
     
     // Filter activities within the last 3 days
     const filteredActivities = sortedActivities.filter(activity => {
-      // Log the activity date for debugging
-      console.log('Activity date (raw):', activity.date);
-      
-      // Parse the activity date
       const activityDate = new Date(activity.date);
       activityDate.setHours(0, 0, 0, 0);  // Set to start of day
       
-      console.log('Activity date (parsed):', activityDate);
-      console.log('Is recent?', activityDate >= twoDaysAgo);
-      
       // Include the activity if it's from today or up to 2 days ago
-      return activityDate >= twoDaysAgo;
+      return activityDate.getTime() >= twoDaysAgo.getTime();
     });
     
-    console.log('Filtered activities count:', filteredActivities.length);
     return filteredActivities;
   };
   
