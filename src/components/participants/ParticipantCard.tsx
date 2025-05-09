@@ -7,7 +7,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ActivityIcon, Users } from "lucide-react";
+import { Clock, ActivityIcon, Users, Trophy } from "lucide-react";
 
 interface ParticipantCardProps {
   participant: Participant;
@@ -17,6 +17,11 @@ interface ParticipantCardProps {
 }
 
 const ParticipantCard = ({ participant, activities, team, onTeamChange }: ParticipantCardProps) => {
+  // Sort activities by date (newest first) before rendering
+  const sortedActivities = [...activities].sort((a, b) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
   return (
     <Card key={participant.id} className="overflow-hidden">
       {team ? (
@@ -75,12 +80,11 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
             </Button>
           </div>
           
-          {activities.length > 0 && (
+          {sortedActivities.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Activities</h3>
               <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                {activities
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                {sortedActivities
                   .slice(0, 3)
                   .map(activity => (
                     <div key={activity.id} className="bg-gray-50 p-2 rounded text-sm">
@@ -101,8 +105,5 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
     </Card>
   );
 };
-
-// Missing import
-import { Trophy } from "lucide-react";
 
 export default ParticipantCard;
