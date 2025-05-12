@@ -8,10 +8,17 @@ import { PARTICIPANTS_KEY } from "./constants";
  */
 export const getParticipants = async (): Promise<Participant[]> => {
   try {
-    // Try to get from Supabase
+    console.log("Fetching participants data from Supabase");
+    
+    // Try to get from Supabase with timeout control
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    
     const { data: supabaseParticipants, error } = await supabase
       .from('participants')
       .select('*');
+    
+    clearTimeout(timeoutId);
     
     if (error) {
       console.error("Error fetching participants from Supabase:", error);
@@ -59,7 +66,19 @@ export const getParticipants = async (): Promise<Participant[]> => {
     
   } catch (e) {
     console.error("Error in getParticipants:", e);
+    
+    // Provide more specific error message for network issues
+    if (e instanceof Error && 
+        (e.message.includes("fetch") || 
+         e.message.includes("network") || 
+         e.message.includes("timeout") || 
+         !navigator.onLine)) {
+      console.log("Network connectivity issue detected in getParticipants");
+      throw new Error("Network connectivity issue. Please check your internet connection and try again.");
+    }
+    
     // Fall back to local storage
+    console.log("Falling back to local storage for participants data");
     const localData = localStorage.getItem(PARTICIPANTS_KEY);
     return localData ? JSON.parse(localData) : [];
   }
@@ -116,6 +135,7 @@ export const getParticipant = async (id: string): Promise<Participant | undefine
     
   } catch (e) {
     console.error("Error in getParticipant:", e);
+    
     // Fall back to local storage
     const participants = localStorage.getItem(PARTICIPANTS_KEY);
     const parsedParticipants = participants ? JSON.parse(participants) : [];

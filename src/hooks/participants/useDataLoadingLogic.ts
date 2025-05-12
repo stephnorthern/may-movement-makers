@@ -38,23 +38,46 @@ export const useDataLoadingLogic = (
       // Add cache-busting parameter for Supabase when forceFresh is true
       const options = forceFresh ? { head: false } : undefined;
       
-      // Load data from Supabase
-      const participantsData = await loadParticipantsData(options);
-      const teamMembersData = await loadTeamMembersData(options);
-      const teamsData = await loadTeamsData(options);
-      const activitiesData = await loadActivitiesData(options);
+      // Use Promise.allSettled to continue even if some requests fail
+      const [participantsResult, teamMembersResult, teamsResult, activitiesResult] = await Promise.allSettled([
+        loadParticipantsData(options),
+        loadTeamMembersData(options),
+        loadTeamsData(options),
+        loadActivitiesData(options)
+      ]);
       
       if (!isMountedRef.current) return;
       
-      console.log("Data fetched successfully:", {
+      // Extract results or handle errors
+      const participantsData = participantsResult.status === 'fulfilled' ? participantsResult.value : null;
+      const teamMembersData = teamMembersResult.status === 'fulfilled' ? teamMembersResult.value : null;
+      const teamsData = teamsResult.status === 'fulfilled' ? teamsResult.value : null;
+      const activitiesData = activitiesResult.status === 'fulfilled' ? activitiesResult.value : null;
+      
+      console.log("Data fetch results:", {
+        participantsSuccess: participantsResult.status === 'fulfilled',
+        teamMembersSuccess: teamMembersResult.status === 'fulfilled',
+        teamsSuccess: teamsResult.status === 'fulfilled', 
+        activitiesSuccess: activitiesResult.status === 'fulfilled',
         participantsCount: participantsData?.length || 0,
-        teamMembersCount: teamMembersData?.length || 0,
-        teamsCount: teamsData?.length || 0,
-        activitiesCount: activitiesData?.length || 0
+        teamsCount: teamsData?.length || 0
       });
       
+      // If critical data is missing, try fallback method
       if (!participantsData || !teamsData) {
-        throw new Error("Failed to load essential data");
+        console.warn("Critical data missing, trying fallback method");
+        // Store any errors for later analysis
+        const errors = [
+          participantsResult.status === 'rejected' ? participantsResult.reason : null,
+          teamsResult.status === 'rejected' ? teamsResult.reason : null
+        ].filter(Boolean);
+        
+        if (errors.length > 0) {
+          throw new Error("Failed to load essential data: " + 
+            errors.map(e => e instanceof Error ? e.message : String(e)).join(', '));
+        } else {
+          throw new Error("Failed to load essential data");
+        }
       }
       
       // Calculate points for each participant
@@ -92,7 +115,17 @@ export const useDataLoadingLogic = (
       console.log("Setting teams data:", teamsData.length);
       setTeams(teamsData);
       
-      await loadParticipantActivities(participantsWithPoints);
+      // Store data in localStorage for offline fallback
+      localStorage.setItem('participants_cache', JSON.stringify(sortedData));
+      localStorage.setItem('teams_cache', JSON.stringify(teamsData));
+      
+      // Try to load participant activities but don't fail if they don't load
+      try {
+        await loadParticipantActivities(participantsWithPoints);
+      } catch (activityError) {
+        console.warn("Failed to load some participant activities:", activityError);
+        // This is non-critical, so we continue
+      }
       
       initialLoadCompleteRef.current = true;
       loadFailedRef.current = false; // Reset failure flag on success
@@ -139,20 +172,23 @@ export const useDataLoadingLogic = (
     
     // Load activities for each participant
     const activitiesMap: Record<string, Activity[]> = {};
-    for (const participant of participantsData) {
-      if (!isMountedRef.current) return;
-      
-      try {
-        const activities = await loadActivitiesForParticipant(
-          participant.id,
-          participant.name
-        );
-        activitiesMap[participant.id] = activities;
-      } catch (e) {
-        console.error(`Error processing activities for participant ${participant.id}:`, e);
-        activitiesMap[participant.id] = []; // Set empty array when activities fail to load
-      }
-    }
+    
+    // Use Promise.allSettled to handle partial failures
+    const activityPromises = participantsData.map(participant => 
+      loadActivitiesForParticipant(participant.id, participant.name)
+        .then(activities => {
+          if (isMountedRef.current) {
+            activitiesMap[participant.id] = activities;
+          }
+        })
+        .catch(e => {
+          console.warn(`Error loading activities for ${participant.name}:`, e);
+          activitiesMap[participant.id] = []; // Set empty array when activities fail to load
+        })
+    );
+    
+    // Wait for all promises to settle (success or failure)
+    await Promise.allSettled(activityPromises);
     
     if (!isMountedRef.current) return;
     
@@ -165,8 +201,19 @@ export const useDataLoadingLogic = (
   const loadDataFallback = useCallback(async () => {
     try {
       console.log("Attempting fallback data loading method");
-      const participantsData = await loadParticipantsFallback();
-      const teamsData = await loadTeamsFallback();
+      
+      // Try to get cached data first
+      let participantsData = JSON.parse(localStorage.getItem('participants_cache') || 'null');
+      let teamsData = JSON.parse(localStorage.getItem('teams_cache') || 'null');
+      
+      // If no cached data, try the fallback functions
+      if (!participantsData) {
+        participantsData = await loadParticipantsFallback();
+      }
+      
+      if (!teamsData) {
+        teamsData = await loadTeamsFallback();
+      }
       
       if (!isMountedRef.current) return false;
       

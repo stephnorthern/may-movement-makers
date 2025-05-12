@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, RefreshCcw, Wifi, WifiOff, HelpCircle } from "lucide-react";
+import { AlertCircle, RefreshCcw, Wifi, WifiOff, HelpCircle, Database } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
 
@@ -16,16 +16,17 @@ const ErrorDisplay = ({ error, onRetry, refreshing }: ErrorDisplayProps) => {
   
   if (!error) return null;
   
-  const isNetworkError = error.message.toLowerCase().includes('network') || 
-                         error.message.toLowerCase().includes('connection') ||
-                         error.message.toLowerCase().includes('failed to fetch') ||
-                         error.message.toLowerCase().includes('timeout') ||
-                         error.message.toLowerCase().includes('cors') ||
+  const errorMessage = error.message.toLowerCase();
+  const isNetworkError = errorMessage.includes('network') || 
+                         errorMessage.includes('connection') ||
+                         errorMessage.includes('failed to fetch') ||
+                         errorMessage.includes('timeout') ||
+                         errorMessage.includes('cors') ||
                          navigator.onLine === false;
   
   // Check if error is specific to Supabase
-  const isSupabaseError = error.message.toLowerCase().includes('supabase') || 
-                          error.message.toLowerCase().includes('database');
+  const isSupabaseError = errorMessage.includes('supabase') || 
+                          errorMessage.includes('database');
   
   return (
     <Card className="bg-red-50 border-red-200">
@@ -33,11 +34,15 @@ const ErrorDisplay = ({ error, onRetry, refreshing }: ErrorDisplayProps) => {
         <div className="flex items-center gap-3 text-red-600 mb-4">
           {isNetworkError ? (
             <WifiOff className="h-6 w-6" />
+          ) : isSupabaseError ? (
+            <Database className="h-6 w-6" />
           ) : (
             <AlertCircle className="h-6 w-6" />
           )}
           <h3 className="text-lg font-medium">
-            {isNetworkError ? 'Network Connection Error' : 'Data Loading Error'}
+            {isNetworkError ? 'Network Connection Error' : 
+             isSupabaseError ? 'Database Connection Error' : 
+             'Data Loading Error'}
           </h3>
         </div>
         
@@ -50,23 +55,25 @@ const ErrorDisplay = ({ error, onRetry, refreshing }: ErrorDisplayProps) => {
             <AlertDescription>
               The application is having trouble connecting to the database. This could be due to:
               <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li>Your internet connection is down</li>
+                <li>Your internet connection is down or unstable</li>
                 <li>The database server might be temporarily unavailable</li>
                 <li>There might be network restrictions blocking the connection</li>
+                <li>Your browser might have cached an error state</li>
               </ul>
             </AlertDescription>
           </Alert>
         )}
         
-        {isSupabaseError && (
+        {(isSupabaseError || isNetworkError) && (
           <Alert className="mb-4 bg-blue-50 border-blue-200 text-blue-800">
             <HelpCircle className="h-4 w-4 text-blue-500" />
             <AlertTitle>Troubleshooting Steps</AlertTitle>
             <AlertDescription>
               <ol className="list-decimal pl-5 mt-2 space-y-1">
                 <li>Check your internet connection</li>
-                <li>Try refreshing the page</li>
-                <li>Clear your browser cache</li>
+                <li><strong>Try refreshing the page</strong> (sometimes this is all that's needed)</li>
+                <li>Clear your browser cache or try in an incognito/private window</li>
+                <li>If using a VPN or firewall, temporarily disable them to test</li>
                 <li>Wait a few minutes and try again (the service might be experiencing temporary issues)</li>
               </ol>
             </AlertDescription>
@@ -75,17 +82,17 @@ const ErrorDisplay = ({ error, onRetry, refreshing }: ErrorDisplayProps) => {
         
         <div className="flex flex-col sm:flex-row gap-3 mt-4">
           <Button 
-            variant="outline" 
-            className="border-red-300 hover:bg-red-100"
+            variant="default"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={onRetry}
             disabled={refreshing}
           >
             <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Try Again
+            {refreshing ? 'Refreshing...' : 'Refresh Data'}
           </Button>
           
           <Button
-            variant="ghost"
+            variant="outline"
             className="text-slate-600"
             onClick={() => setShowingDetails(!showingDetails)}
           >
