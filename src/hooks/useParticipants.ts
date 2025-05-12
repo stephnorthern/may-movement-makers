@@ -14,6 +14,7 @@ export const useParticipants = () => {
     teams,
     participantActivities,
     isLoading,
+    setIsLoading
   } = useParticipantData();
   
   // Load data hook
@@ -28,11 +29,24 @@ export const useParticipants = () => {
   
   // Load data on initial mount
   useEffect(() => {
+    console.log("useParticipants effect: Setting up and loading initial data");
     isMountedRef.current = true;
-    loadData();
+    
+    // Initial data load
+    const initialLoad = async () => {
+      try {
+        await loadData();
+        console.log("Initial data loaded successfully");
+      } catch (error) {
+        console.error("Error during initial data load:", error);
+      }
+    };
+    
+    initialLoad();
     
     // When component unmounts
     return () => {
+      console.log("useParticipants cleanup");
       cleanupResources();
     };
   }, [loadData, isMountedRef, cleanupResources]);

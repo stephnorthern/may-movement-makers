@@ -23,6 +23,7 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
   const startLoading = useCallback(() => {
     if (!isMountedRef.current) return;
     
+    console.log("Starting loading process");
     setIsLoading(true);
     
     // Set a timeout to clear loading state if it gets stuck
@@ -33,8 +34,8 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
     // Reset loading state after 10 seconds to prevent stuck loading indicators
     loadingTimeoutRef.current = setTimeout(() => {
       if (isMountedRef.current) {
-        setIsLoading(false);
         console.log("Loading timeout reached - resetting loading state");
+        setIsLoading(false);
       }
     }, 10000);
   }, [setIsLoading]);
@@ -44,6 +45,7 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
    */
   const endLoading = useCallback(() => {
     if (isMountedRef.current) {
+      console.log("Ending loading process");
       // Clear the loading timeout
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
@@ -59,6 +61,7 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
    * Cleanup resources on unmount
    */
   const cleanupResources = useCallback(() => {
+    console.log("Cleaning up resources");
     isMountedRef.current = false;
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);

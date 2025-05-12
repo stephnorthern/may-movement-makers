@@ -1,12 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Participant } from "@/types";
 import { 
   Card, 
   CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, RefreshCcw } from "lucide-react";
 import { useParticipants } from "@/hooks/useParticipants";
 import ParticipantCard from "@/components/participants/ParticipantCard";
 import EmptyParticipantsList from "@/components/participants/EmptyParticipantsList";
@@ -14,6 +14,7 @@ import AddParticipantDialog from "@/components/participants/AddParticipantDialog
 import TeamAssignmentDialog from "@/components/participants/TeamAssignmentDialog";
 import LoadingIndicator from "@/components/dashboard/LoadingIndicator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const Participants = () => {
   const {
@@ -28,17 +29,35 @@ const Participants = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   
   // Flag to track if we've shown data at least once
   const hasShownData = participants.length > 0;
+  
+  useEffect(() => {
+    if (participants.length > 0 && !hasLoadedOnce) {
+      setHasLoadedOnce(true);
+    }
+  }, [participants, hasLoadedOnce]);
   
   const handleTeamDialogOpen = (participant: Participant) => {
     setSelectedParticipant(participant);
     setIsTeamDialogOpen(true);
   };
   
+  const handleManualRefresh = async () => {
+    try {
+      toast.info("Refreshing participant data...");
+      await loadData();
+      toast.success("Data refreshed successfully");
+    } catch (error) {
+      toast.error("Failed to refresh data");
+      console.error("Manual refresh error:", error);
+    }
+  };
+  
   // Render initial loading state more elegantly
-  if (isLoading && !hasShownData) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -62,12 +81,23 @@ const Participants = () => {
           <p className="text-gray-600">View and manage all challenge participants</p>
         </div>
         
-        <Button 
-          className="bg-movement-purple hover:bg-movement-dark-purple"
-          onClick={() => setIsDialogOpen(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Participant
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleManualRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          
+          <Button 
+            className="bg-movement-purple hover:bg-movement-dark-purple"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Participant
+          </Button>
+        </div>
       </div>
       
       {/* Show a non-flashing loading message only when refreshing data */}

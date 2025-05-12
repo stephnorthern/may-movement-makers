@@ -15,7 +15,9 @@ export const useDataLoading = () => {
    */
   const loadParticipantsFallback = useCallback(async () => {
     try {
-      return await getParticipants();
+      const participants = await getParticipants();
+      console.log("Fallback loaded participants:", participants.length);
+      return participants;
     } catch (fallbackError) {
       console.error("Fallback error loading participants:", fallbackError);
       toast.error("All participant loading methods failed");
@@ -28,7 +30,9 @@ export const useDataLoading = () => {
    */
   const loadTeamsFallback = useCallback(async () => {
     try {
-      return await getTeams();
+      const teams = await getTeams();
+      console.log("Fallback loaded teams:", teams.length);
+      return teams;
     } catch (fallbackError) {
       console.error("Fallback error loading teams:", fallbackError);
       toast.error("All team loading methods failed");
@@ -42,7 +46,9 @@ export const useDataLoading = () => {
   const loadActivitiesFallback = useCallback(
     async (participantId: string): Promise<Activity[]> => {
       try {
-        return await getParticipantActivities(participantId);
+        const activities = await getParticipantActivities(participantId);
+        console.log(`Fallback loaded activities for ${participantId}:`, activities.length);
+        return activities;
       } catch (fallbackActivityError) {
         console.error(
           `Error loading activities for participant ${participantId}:`,
