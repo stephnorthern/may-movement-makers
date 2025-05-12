@@ -1,8 +1,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, RefreshCcw, Wifi, WifiOff } from "lucide-react";
+import { AlertCircle, RefreshCcw, Wifi, WifiOff, HelpCircle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
 
 interface ErrorDisplayProps {
   error: Error | null;
@@ -11,11 +12,20 @@ interface ErrorDisplayProps {
 }
 
 const ErrorDisplay = ({ error, onRetry, refreshing }: ErrorDisplayProps) => {
+  const [showingDetails, setShowingDetails] = useState(false);
+  
   if (!error) return null;
   
   const isNetworkError = error.message.toLowerCase().includes('network') || 
                          error.message.toLowerCase().includes('connection') ||
-                         error.message.toLowerCase().includes('failed to fetch');
+                         error.message.toLowerCase().includes('failed to fetch') ||
+                         error.message.toLowerCase().includes('timeout') ||
+                         error.message.toLowerCase().includes('cors') ||
+                         navigator.onLine === false;
+  
+  // Check if error is specific to Supabase
+  const isSupabaseError = error.message.toLowerCase().includes('supabase') || 
+                          error.message.toLowerCase().includes('database');
   
   return (
     <Card className="bg-red-50 border-red-200">
@@ -48,15 +58,53 @@ const ErrorDisplay = ({ error, onRetry, refreshing }: ErrorDisplayProps) => {
           </Alert>
         )}
         
-        <Button 
-          variant="outline" 
-          className="border-red-300 hover:bg-red-100"
-          onClick={onRetry}
-          disabled={refreshing}
-        >
-          <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Try Again
-        </Button>
+        {isSupabaseError && (
+          <Alert className="mb-4 bg-blue-50 border-blue-200 text-blue-800">
+            <HelpCircle className="h-4 w-4 text-blue-500" />
+            <AlertTitle>Troubleshooting Steps</AlertTitle>
+            <AlertDescription>
+              <ol className="list-decimal pl-5 mt-2 space-y-1">
+                <li>Check your internet connection</li>
+                <li>Try refreshing the page</li>
+                <li>Clear your browser cache</li>
+                <li>Wait a few minutes and try again (the service might be experiencing temporary issues)</li>
+              </ol>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+          <Button 
+            variant="outline" 
+            className="border-red-300 hover:bg-red-100"
+            onClick={onRetry}
+            disabled={refreshing}
+          >
+            <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Try Again
+          </Button>
+          
+          <Button
+            variant="ghost"
+            className="text-slate-600"
+            onClick={() => setShowingDetails(!showingDetails)}
+          >
+            {showingDetails ? "Hide Technical Details" : "Show Technical Details"}
+          </Button>
+        </div>
+        
+        {showingDetails && (
+          <div className="mt-4 p-3 bg-slate-100 rounded-md text-xs font-mono overflow-x-auto">
+            <p className="text-slate-500">Error details:</p>
+            <pre className="whitespace-pre-wrap">{error.toString()}</pre>
+            {error.stack && (
+              <>
+                <p className="mt-2 text-slate-500">Stack trace:</p>
+                <pre className="whitespace-pre-wrap">{error.stack}</pre>
+              </>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

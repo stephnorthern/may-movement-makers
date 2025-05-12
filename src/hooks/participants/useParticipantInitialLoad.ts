@@ -18,6 +18,7 @@ export const useParticipantInitialLoad = (
   // Load data on initial mount with auto-retry
   useEffect(() => {
     console.log("useParticipants effect: Setting up and loading initial data");
+    let isMounted = true;
     
     // Initial data load
     const initialLoad = async () => {
@@ -27,6 +28,8 @@ export const useParticipantInitialLoad = (
         
         // Force a direct fetch from Supabase instead of relying on cached data
         const result = await loadData(true);
+        if (!isMounted) return;
+        
         console.log("Initial data loaded successfully, result:", result);
         console.log("Participants count:", participants.length);
         console.log("Teams count:", teams.length);
@@ -37,22 +40,27 @@ export const useParticipantInitialLoad = (
           console.log("No data found in database or data not yet in state");
           // Try loading again if first attempt shows no data, with increasing delay
           if (loadAttempts < 3) {
-            setLoadAttempts(loadAttempts + 1);
-            const retryDelay = loadAttempts === 0 ? 1000 : 3000; // Progressive retry
+            const newAttempts = loadAttempts + 1;
+            setLoadAttempts(newAttempts);
+            const retryDelay = newAttempts === 1 ? 1000 : 3000; // Progressive retry
             setTimeout(() => {
-              console.log(`Retry attempt ${loadAttempts + 1} after ${retryDelay}ms`);
-              loadData(true);
+              if (isMounted) {
+                console.log(`Retry attempt ${newAttempts} after ${retryDelay}ms`);
+                loadData(true);
+              }
             }, retryDelay);
           }
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error("Error during initial data load:", error);
         
         // Check if it's a network connectivity issue
         const errorMessage = error instanceof Error ? error.message : String(error);
         const isNetworkError = errorMessage.toLowerCase().includes('failed to fetch') || 
                               errorMessage.toLowerCase().includes('network') ||
-                              errorMessage.toLowerCase().includes('connection');
+                              errorMessage.toLowerCase().includes('connection') ||
+                              navigator.onLine === false;
         
         if (isNetworkError) {
           setLoadError(new Error("Network connectivity issue. Please check your internet connection and try again."));
@@ -62,8 +70,10 @@ export const useParticipantInitialLoad = (
           toast.error("Failed to load participant data");
         }
       } finally {
-        setInitialLoadAttempted(true);
-        setIsLoading(false);
+        if (isMounted) {
+          setInitialLoadAttempted(true);
+          setIsLoading(false);
+        }
       }
     };
     
@@ -71,10 +81,12 @@ export const useParticipantInitialLoad = (
     
     // Auto refresh after a delay if needed
     const refreshTimer = setTimeout(() => {
-      if (participants.length === 0 && teams.length === 0) {
+      if (isMounted && participants.length === 0 && teams.length === 0) {
         console.log("No data loaded after initial attempt, trying forced refresh");
         loadData(true).catch(err => {
-          console.error("Auto-refresh failed:", err);
+          if (isMounted) {
+            console.error("Auto-refresh failed:", err);
+          }
         });
       }
     }, 5000);
@@ -82,6 +94,7 @@ export const useParticipantInitialLoad = (
     // When component unmounts
     return () => {
       console.log("useParticipants cleanup");
+      isMounted = false;
       clearTimeout(refreshTimer);
     };
   }, [loadData, setIsLoading, participants.length, teams.length, loadAttempts, setLoadAttempts, setInitialLoadAttempted, setLoadError]);
