@@ -1,6 +1,7 @@
 
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /**
  * Hook for handling realtime updates from Supabase with improved debouncing
@@ -12,8 +13,8 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
   // Track last update time to prevent too frequent updates
   const lastUpdateTimeRef = useRef(Date.now());
   
-  // Minimum time between updates in milliseconds (1500ms debounce - increased from 1000ms)
-  const UPDATE_DEBOUNCE_TIME = 1500;
+  // Minimum time between updates in milliseconds (2000ms debounce - increased from 1500ms)
+  const UPDATE_DEBOUNCE_TIME = 2000;
   
   // Timeout ref for debouncing
   const updateTimeoutRef = useRef<number | null>(null);
@@ -90,6 +91,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     } catch (error) {
       console.error('Error during realtime data reload:', error);
       successfulLoadRef.current = false;
+      toast.error("Failed to refresh data");
     } finally {
       // Always set loading to false to prevent stuck loading states
       isLoadingRef.current = false;
@@ -158,13 +160,14 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     const watchdogTimer = window.setInterval(() => {
       if (isLoadingRef.current) {
         const loadingDuration = Date.now() - lastUpdateTimeRef.current;
-        // If loading for over 15 seconds, reset the loading state
-        if (loadingDuration > 15000) {
+        // If loading for over 10 seconds, reset the loading state
+        if (loadingDuration > 10000) {
           console.warn('Detected stuck loading state, resetting...');
           isLoadingRef.current = false;
+          toast.error("Loading timed out. Please refresh the page if data appears outdated.");
         }
       }
-    }, 5000); // Check every 5 seconds
+    }, 3000); // Check every 3 seconds
     
     return () => {
       // Clean up subscriptions and timers

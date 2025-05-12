@@ -33,6 +33,8 @@ export const getActivities = async (): Promise<Activity[]> => {
     }
 
     if (!supabaseActivities || supabaseActivities.length === 0) {
+      // Cache empty activities to avoid repeated calls
+      localStorage.setItem(ACTIVITIES_KEY, JSON.stringify([]));
       return [];
     }
 
@@ -42,21 +44,21 @@ export const getActivities = async (): Promise<Activity[]> => {
       participants.map(p => [p.id, p])
     );
 
-    // Map Supabase data to our Activity type
+    // Map Supabase data to our Activity type - improved error handling
     const formattedActivities = supabaseActivities.map(a => {
       const participant = participantsMap.get(a.participant_id) || { name: "Unknown" };
       
-      // Ensure we get the exact date string in YYYY-MM-DD format
-      let dateString = a.date ? a.date.split('T')[0] : "";
+      // Ensure we get the exact date string in YYYY-MM-DD format, with null checks
+      let dateString = a.date ? a.date.toString().split('T')[0] : "";
       
       return {
         id: a.id,
         participantId: a.participant_id,
         participantName: participant.name,
-        type: a.description, // Map description to type
-        minutes: a.minutes,
-        points: a.points || calculatePoints(a.minutes),
-        date: dateString, // Format date correctly without timezone issues
+        type: a.description || "", // Ensure we have a string
+        minutes: a.minutes || 0,  // Ensure we have a number
+        points: typeof a.points === 'number' ? a.points : calculatePoints(a.minutes || 0),
+        date: dateString,
         notes: ""  // No notes field in our DB yet
       };
     });
@@ -83,7 +85,7 @@ export const getActivities = async (): Promise<Activity[]> => {
  */
 export const getParticipantActivities = async (participantId: string): Promise<Activity[]> => {
   try {
-    // Try to get from Supabase with optimization - only fetch for this participant
+    // Try to get from Supabase with optimization
     const { data: supabaseActivities, error } = await supabase
       .from('activities')
       .select(`
@@ -95,7 +97,8 @@ export const getParticipantActivities = async (participantId: string): Promise<A
         points
       `)
       .eq('participant_id', participantId)
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(20); // Limit to most recent 20 activities for performance
     
     if (error) {
       console.error("Error fetching from Supabase:", error);
@@ -113,18 +116,18 @@ export const getParticipantActivities = async (participantId: string): Promise<A
     const participants = await getParticipants();
     const participant = participants.find(p => p.id === participantId) || { name: "Unknown" };
 
-    // Map Supabase data to our Activity type with minimal processing
+    // Map Supabase data to our Activity type with better error handling
     return supabaseActivities.map(a => {
       // Ensure we get the exact date string in YYYY-MM-DD format
-      let dateString = a.date ? a.date.split('T')[0] : "";
+      let dateString = a.date ? a.date.toString().split('T')[0] : "";
       
       return {
         id: a.id,
         participantId: a.participant_id,
         participantName: participant.name,
-        type: a.description,
-        minutes: a.minutes,
-        points: a.points || calculatePoints(a.minutes),
+        type: a.description || "",
+        minutes: a.minutes || 0,
+        points: typeof a.points === 'number' ? a.points : calculatePoints(a.minutes || 0),
         date: dateString,
         notes: ""
       };

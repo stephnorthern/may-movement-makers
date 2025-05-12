@@ -70,15 +70,15 @@ const Participants = () => {
         </Button>
       </div>
       
-      {/* Show loading message only if we've already shown data before */}
+      {/* Show a non-flashing loading message only when refreshing data */}
       {isLoading && hasShownData && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-sm flex items-center opacity-80">
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-sm flex items-center opacity-80 fixed top-4 right-4 shadow-md z-50">
           <div className="mr-2 h-4 w-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
           Refreshing data...
         </div>
       )}
       
-      {/* Show skeletons instead of empty state when loading */}
+      {/* Show the participants grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {participants.length > 0 ? (
           participants.map((participant) => {
