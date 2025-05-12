@@ -26,8 +26,8 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of day for comparison
     
-    const activityDate = new Date(dateString);
-    activityDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    // Create a date object that respects the exact date from the string without timezone adjustments
+    const activityDate = new Date(dateString + 'T00:00:00');
     
     // Check if date is today
     if (activityDate.toDateString() === today.toDateString()) {
@@ -41,8 +41,12 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
       return "Yesterday";
     }
     
-    // Otherwise return the date
-    return activityDate.toLocaleDateString();
+    // Otherwise return the date in localized format
+    return activityDate.toLocaleDateString(undefined, { 
+      year: 'numeric',
+      month: 'short', 
+      day: 'numeric'
+    });
   };
 
   // Get activities from the last 3 days (including today)
@@ -59,8 +63,8 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
     
     // Filter activities within the last 3 days
     const filteredActivities = sortedActivities.filter(activity => {
-      const activityDate = new Date(activity.date);
-      activityDate.setHours(0, 0, 0, 0);  // Set to start of day
+      // Create a date object that respects the exact date from the string without timezone adjustments
+      const activityDate = new Date(activity.date + 'T00:00:00');
       
       // Include the activity if it's from today or up to 2 days ago
       return activityDate.getTime() >= twoDaysAgo.getTime();
