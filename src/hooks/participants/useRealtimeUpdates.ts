@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
- * Hook for handling realtime updates from Supabase with improved debouncing
+ * Hook for handling realtime updates from Supabase with improved debouncing and error handling
  */
 export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
   // Use a ref to track if data loading is already in progress
@@ -13,11 +13,11 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
   // Track last update time to prevent too frequent updates
   const lastUpdateTimeRef = useRef(Date.now());
   
-  // Minimum time between updates in milliseconds (2000ms debounce - increased from 1500ms)
-  const UPDATE_DEBOUNCE_TIME = 2000;
+  // Minimum time between updates in milliseconds (1500ms debounce)
+  const UPDATE_DEBOUNCE_TIME = 1500;
   
   // Timeout ref for debouncing
-  const updateTimeoutRef = useRef<number | null>(null);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track events in a batch during debounce period
   const pendingEventsRef = useRef<Set<string>>(new Set());
@@ -34,7 +34,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     
     // Clear any pending update timeout
     if (updateTimeoutRef.current) {
-      window.clearTimeout(updateTimeoutRef.current);
+      clearTimeout(updateTimeoutRef.current);
       updateTimeoutRef.current = null;
     }
     
@@ -44,7 +44,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     
     if (isLoadingRef.current) {
       // Skip if already loading, but ensure we schedule a follow-up check
-      updateTimeoutRef.current = window.setTimeout(() => {
+      updateTimeoutRef.current = setTimeout(() => {
         // Only reload if we have pending events and not already loading
         if (pendingEventsRef.current.size > 0 && !isLoadingRef.current) {
           performDataLoad();
@@ -57,7 +57,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     if (timeSinceLastUpdate < UPDATE_DEBOUNCE_TIME) {
       const delayTime = UPDATE_DEBOUNCE_TIME - timeSinceLastUpdate;
       
-      updateTimeoutRef.current = window.setTimeout(() => {
+      updateTimeoutRef.current = setTimeout(() => {
         performDataLoad();
       }, delayTime);
       return;
@@ -91,14 +91,13 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     } catch (error) {
       console.error('Error during realtime data reload:', error);
       successfulLoadRef.current = false;
-      toast.error("Failed to refresh data");
     } finally {
       // Always set loading to false to prevent stuck loading states
       isLoadingRef.current = false;
       
       // Check if we need to schedule another update, but with a minimum delay
       if (pendingEventsRef.current.size > 0) {
-        updateTimeoutRef.current = window.setTimeout(() => {
+        updateTimeoutRef.current = setTimeout(() => {
           if (pendingEventsRef.current.size > 0) {
             performDataLoad();
           }
@@ -108,7 +107,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
   };
 
   useEffect(() => {
-    // Initial load - but don't mark as an event that would trigger further loads
+    // Initial load to ensure we have data
     performDataLoad();
     
     // Set up Supabase realtime subscriptions with debouncing
@@ -121,7 +120,9 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
           safeLoadData('participants');
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Participants channel status: ${status}`);
+      });
     
     const activitiesChannel = supabase
       .channel('public:activities')
@@ -132,7 +133,9 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
           safeLoadData('activities');
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Activities channel status: ${status}`);
+      });
     
     const teamsChannel = supabase
       .channel('public:teams')
@@ -143,7 +146,9 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
           safeLoadData('teams');
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Teams channel status: ${status}`);
+      });
     
     const teamMembersChannel = supabase
       .channel('public:team_members')
@@ -154,17 +159,18 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
           safeLoadData('team_members');
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Team members channel status: ${status}`);
+      });
     
     // Create a watchdog timer to detect and fix stuck loading states
-    const watchdogTimer = window.setInterval(() => {
+    const watchdogTimer = setInterval(() => {
       if (isLoadingRef.current) {
         const loadingDuration = Date.now() - lastUpdateTimeRef.current;
         // If loading for over 10 seconds, reset the loading state
         if (loadingDuration > 10000) {
           console.warn('Detected stuck loading state, resetting...');
           isLoadingRef.current = false;
-          toast.error("Loading timed out. Please refresh the page if data appears outdated.");
         }
       }
     }, 3000); // Check every 3 seconds
@@ -172,10 +178,10 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     return () => {
       // Clean up subscriptions and timers
       if (updateTimeoutRef.current) {
-        window.clearTimeout(updateTimeoutRef.current);
+        clearTimeout(updateTimeoutRef.current);
       }
       
-      window.clearInterval(watchdogTimer);
+      clearInterval(watchdogTimer);
       
       supabase.removeChannel(participantsChannel);
       supabase.removeChannel(activitiesChannel);

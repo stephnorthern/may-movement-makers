@@ -1,9 +1,10 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParticipantData } from "./participants/useParticipantData";
 import { useTeamUtils } from "./participants/useTeamUtils";
 import { useRealtimeUpdates } from "./participants/useRealtimeUpdates";
 import { useParticipantsData } from "./participants/useParticipantsData";
+import { toast } from "sonner";
 
 /**
  * Main hook for managing participants, their activities, and teams
@@ -17,6 +18,9 @@ export const useParticipants = () => {
     setIsLoading
   } = useParticipantData();
   
+  // Additional state to track if initial loading attempt completed
+  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
+  
   // Load data hook
   const {
     loadData,
@@ -25,7 +29,7 @@ export const useParticipants = () => {
   } = useParticipantsData();
   
   // Set up realtime updates
-  useRealtimeUpdates(loadData);
+  const { isLoadingData, loadComplete } = useRealtimeUpdates(loadData);
   
   // Load data on initial mount
   useEffect(() => {
@@ -35,10 +39,16 @@ export const useParticipants = () => {
     // Initial data load
     const initialLoad = async () => {
       try {
+        setIsLoading(true);
         await loadData();
         console.log("Initial data loaded successfully");
+        toast.success("Data loaded successfully");
       } catch (error) {
         console.error("Error during initial data load:", error);
+        toast.error("Failed to load participant data");
+      } finally {
+        setInitialLoadAttempted(true);
+        setIsLoading(false);
       }
     };
     
@@ -49,7 +59,7 @@ export const useParticipants = () => {
       console.log("useParticipants cleanup");
       cleanupResources();
     };
-  }, [loadData, isMountedRef, cleanupResources]);
+  }, [loadData, isMountedRef, cleanupResources, setIsLoading]);
   
   // Team utilities
   const { getTeamById } = useTeamUtils(teams);
@@ -58,7 +68,8 @@ export const useParticipants = () => {
     participants,
     teams,
     participantActivities,
-    isLoading,
+    isLoading: isLoading || isLoadingData,
+    initialLoadAttempted,
     loadData,
     getTeamById
   };
