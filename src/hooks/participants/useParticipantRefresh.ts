@@ -22,24 +22,25 @@ export const useParticipantRefresh = (loadData: (forceFresh: boolean) => Promise
       toast.info("Checking connection and refreshing data...");
       
       // Use a longer timeout for later retry attempts
-      const timeoutMs = Math.min(10000, 3000 * Math.pow(1.5, Math.min(newRetryCount, 5)));
+      const timeoutMs = Math.min(15000, 5000 * Math.pow(1.5, Math.min(newRetryCount, 5)));
       
       // Create a promise with timeout
       const loadWithTimeout = async () => {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+          // Set up timeout
           const timeoutId = setTimeout(() => {
             reject(new Error("Request timed out"));
           }, timeoutMs);
           
-          loadData(true)
-            .then((result) => {
-              clearTimeout(timeoutId);
-              resolve(result);
-            })
-            .catch((error) => {
-              clearTimeout(timeoutId);
-              reject(error);
-            });
+          try {
+            // Force a fresh load with cache-busting
+            const result = await loadData(true);
+            clearTimeout(timeoutId);
+            resolve(result);
+          } catch (error) {
+            clearTimeout(timeoutId);
+            reject(error);
+          }
         });
       };
       
@@ -54,10 +55,10 @@ export const useParticipantRefresh = (loadData: (forceFresh: boolean) => Promise
       
       const isNetworkError = 
         (error instanceof Error && (
-          error.message.toLowerCase().includes('failed to fetch') ||
-          error.message.toLowerCase().includes('network') ||
-          error.message.toLowerCase().includes('timeout') ||
-          error.message.toLowerCase().includes('abort')
+          errorMessage.toLowerCase().includes('failed to fetch') ||
+          errorMessage.toLowerCase().includes('network') ||
+          errorMessage.toLowerCase().includes('timeout') ||
+          errorMessage.toLowerCase().includes('abort')
         )) || !navigator.onLine;
       
       // Provide more specific error messages based on retry count and error type

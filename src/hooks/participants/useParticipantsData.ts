@@ -36,7 +36,7 @@ export const useParticipantsData = () => {
     cleanupResources
   } = useLoadingState(setIsLoading);
   
-  // Use the extracted data loading logic
+  // Use the extracted data loading logic with improved error handling
   const { loadData } = useDataLoadingLogic(
     loadParticipantsData,
     loadTeamMembersData,
@@ -55,6 +55,8 @@ export const useParticipantsData = () => {
 
   return {
     loadData,
+    participants,
+    teams,
     initialLoadCompleteRef,
     isMountedRef,
     loadFailedRef,

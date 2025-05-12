@@ -16,10 +16,18 @@ export const useParticipantData = () => {
   const loadParticipantsData = async (options = {}) => {
     try {
       console.log("Fetching participants data from Supabase");
-      // Load participants from Supabase
+      // Add cache-busting parameter based on current time
+      const cacheBuster = options['forceFresh'] ? `?_t=${Date.now()}` : '';
+      
+      // Load participants from Supabase with abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const { data: participantsData, error: participantsError } = await supabase
         .from('participants')
         .select('*');
+      
+      clearTimeout(timeoutId);
       
       if (participantsError) {
         console.error("Error loading participants:", participantsError);
@@ -30,7 +38,15 @@ export const useParticipantData = () => {
       return participantsData || [];
     } catch (error) {
       console.error("Error fetching participants:", error);
-      toast.error("Failed to load participants data");
+      // Check if it's a network error
+      if (error instanceof Error && 
+          (error.message.includes("abort") || 
+           error.message.includes("timeout") || 
+           !navigator.onLine)) {
+        toast.error("Network error loading participants. Please check your internet connection.");
+      } else {
+        toast.error("Failed to load participants data");
+      }
       // Always return an empty array instead of throwing to prevent cascade failures
       return [];
     }

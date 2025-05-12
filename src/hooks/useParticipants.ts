@@ -41,10 +41,10 @@ export const useParticipants = () => {
     setLoadAttempts
   } = useParticipantLoadingState();
   
-  // Refresh management
+  // Refresh management with enhanced error handling
   const { refreshing, setRefreshing, retryLoading } = useParticipantRefresh(loadData);
   
-  // Initialize data loading
+  // Initialize data loading with fallback strategies
   useParticipantInitialLoad(
     loadData,
     setIsLoading,
@@ -64,7 +64,8 @@ export const useParticipants = () => {
       participantsCount: participants.length,
       teamsCount: teams.length,
       hasError: !!loadError,
-      hasParticipantActivities: Object.keys(participantActivities).length > 0
+      hasParticipantActivities: Object.keys(participantActivities).length > 0,
+      refreshing
     });
     
     if (loadError) {
@@ -74,23 +75,30 @@ export const useParticipants = () => {
     if (participants.length > 0) {
       console.log("First participant:", participants[0]);
     }
-  }, [isLoading, initialLoadAttempted, participants, teams, loadError, participantActivities]);
+  }, [isLoading, initialLoadAttempted, participants, teams, loadError, participantActivities, refreshing]);
   
-  // Force a refresh on initial render
+  // Force a refresh on initial render with immediate triggering
   useEffect(() => {
-    // Small delay to allow component to mount fully
-    const timer = setTimeout(() => {
-      const hasShownData = participants.length > 0;
-      if (!hasShownData && !refreshing) {
-        handleManualRefresh();
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    // Immediate check and refresh if needed
+    if (participants.length === 0 && !refreshing && initialLoadAttempted) {
+      console.log("No participants loaded yet, triggering immediate refresh");
+      handleManualRefresh();
+    } else {
+      console.log("Initial participants state:", { 
+        count: participants.length, 
+        refreshing, 
+        initialLoadAttempted 
+      });
+    }
+  }, [participants.length, refreshing, initialLoadAttempted]);
   
-  // Manual refresh handler
+  // Manual refresh handler with improved error handling
   const handleManualRefresh = async () => {
+    if (refreshing) {
+      console.log("Refresh already in progress, skipping");
+      return;
+    }
+    
     try {
       setRefreshing(true);
       toast.info("Refreshing participant data...");

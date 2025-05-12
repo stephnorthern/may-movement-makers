@@ -12,6 +12,8 @@ import ParticipantsGrid from "@/components/participants/ParticipantsGrid";
 import RefreshingIndicator from "@/components/participants/RefreshingIndicator";
 import ErrorDisplay from "@/components/participants/ErrorDisplay";
 import { Participant } from "@/types";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const Participants = () => {
   const {
@@ -34,44 +36,25 @@ const Participants = () => {
   
   // Flag to track if we've shown data at least once
   const hasShownData = participants.length > 0;
-  const showEmptyState = !isLoading && initialLoadAttempted && participants.length === 0;
+  const showEmptyState = !isLoading && initialLoadAttempted && participants.length === 0 && !loadError;
+  
+  // Trigger an initial load if not loading and no data
+  useEffect(() => {
+    if (!isLoading && !refreshing && !hasShownData && initialLoadAttempted) {
+      // Small delay before trying again
+      const timer = setTimeout(() => {
+        console.log("Triggering refresh after delay - no data shown yet");
+        handleManualRefresh();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, refreshing, hasShownData, initialLoadAttempted]);
 
   const handleTeamDialogOpen = (participant: Participant) => {
     setSelectedParticipant(participant);
     setIsTeamDialogOpen(true);
   };
-  
-  // Debug information
-  useEffect(() => {
-    console.log("Participants page state:", {
-      isLoading,
-      initialLoadAttempted,
-      participantsCount: participants.length,
-      teamsCount: teams.length,
-      hasError: !!loadError,
-      hasParticipantActivities: Object.keys(participantActivities).length > 0
-    });
-    
-    if (loadError) {
-      console.error("Load error details:", loadError);
-    }
-    
-    if (participants.length > 0) {
-      console.log("First participant:", participants[0]);
-    }
-  }, [isLoading, initialLoadAttempted, participants, teams, loadError, participantActivities]);
-
-  // Force a refresh on initial render
-  useEffect(() => {
-    // Small delay to allow component to mount fully
-    const timer = setTimeout(() => {
-      if (!hasShownData && !refreshing) {
-        handleManualRefresh();
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
   
   // Render initial loading state
   if (isLoading && !hasShownData) {
@@ -101,6 +84,18 @@ const Participants = () => {
           refreshing={refreshing}
         />
         
+        <div className="flex justify-center">
+          <Button
+            onClick={handleManualRefresh}
+            variant="outline"
+            className="mb-4"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing..." : "Try Again"}
+          </Button>
+        </div>
+        
         <ErrorDisplay 
           error={loadError} 
           onRetry={handleManualRefresh}
@@ -118,7 +113,7 @@ const Participants = () => {
   }
 
   // Render empty state if no data after attempted load
-  if (showEmptyState && initialLoadAttempted && !isLoading) {
+  if (showEmptyState) {
     return (
       <div className="space-y-6">
         <ParticipantsHeader 
@@ -141,7 +136,7 @@ const Participants = () => {
           teams={teams}
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          onSuccess={loadData}
+          onSuccess={() => loadData(true)}
         />
       </div>
     );
