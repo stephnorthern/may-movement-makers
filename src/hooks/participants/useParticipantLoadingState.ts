@@ -21,15 +21,27 @@ export const useParticipantLoadingState = () => {
         
         if (error) {
           console.error("Supabase connection error:", error);
-          toast.error(`Database connection error: ${error.message}`);
-          setLoadError(new Error(`Database connection error: ${error.message}`));
+          
+          // Determine if it's a network error
+          const errorMessage = error.message.toLowerCase();
+          const isNetworkError = errorMessage.includes('failed to fetch') || 
+                               errorMessage.includes('network') ||
+                               errorMessage.includes('connection');
+          
+          if (isNetworkError) {
+            toast.error("Database connection error: Network connection issue");
+            setLoadError(new Error("Network connectivity issue. Please check your internet connection."));
+          } else {
+            toast.error(`Database connection error: ${error.message}`);
+            setLoadError(new Error(`Database connection error: ${error.message}`));
+          }
         } else {
           console.log("Supabase connection successful:", data);
         }
       } catch (err) {
         console.error("Failed to check Supabase connection:", err);
-        toast.error("Failed to connect to database");
-        setLoadError(new Error("Failed to connect to database"));
+        toast.error("Failed to connect to database - check your network connection");
+        setLoadError(new Error("Failed to connect to database - possible network connectivity issue"));
       }
     };
     

@@ -47,8 +47,20 @@ export const useParticipantInitialLoad = (
         }
       } catch (error) {
         console.error("Error during initial data load:", error);
-        setLoadError(error instanceof Error ? error : new Error("Unknown error"));
-        toast.error("Failed to load participant data");
+        
+        // Check if it's a network connectivity issue
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isNetworkError = errorMessage.toLowerCase().includes('failed to fetch') || 
+                              errorMessage.toLowerCase().includes('network') ||
+                              errorMessage.toLowerCase().includes('connection');
+        
+        if (isNetworkError) {
+          setLoadError(new Error("Network connectivity issue. Please check your internet connection and try again."));
+          toast.error("Unable to connect to the database. Please check your internet connection.");
+        } else {
+          setLoadError(error instanceof Error ? error : new Error("Unknown error loading data"));
+          toast.error("Failed to load participant data");
+        }
       } finally {
         setInitialLoadAttempted(true);
         setIsLoading(false);
