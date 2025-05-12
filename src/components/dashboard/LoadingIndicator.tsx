@@ -1,5 +1,5 @@
 
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const LoadingIndicator = ({ error, retryFn }: { 
@@ -28,6 +28,43 @@ const LoadingIndicator = ({ error, retryFn }: {
     return "This may take a moment as we fetch your data";
   };
 
+  // Get more specific error guidance based on error message
+  const getErrorGuidance = () => {
+    if (!error) return null;
+    
+    const errorMessage = error.message.toLowerCase();
+    
+    if (errorMessage.includes("connection") || errorMessage.includes("network")) {
+      return (
+        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <span className="font-medium text-amber-800">Connection Issue Detected</span>
+          </div>
+          <p className="text-amber-700">
+            Please check your internet connection and ensure you have access to the database.
+          </p>
+        </div>
+      );
+    }
+    
+    if (errorMessage.includes("permission") || errorMessage.includes("access") || errorMessage.includes("denied")) {
+      return (
+        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <span className="font-medium text-amber-800">Permission Issue Detected</span>
+          </div>
+          <p className="text-amber-700">
+            You may not have the correct permissions to access this data. Please contact your administrator.
+          </p>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   // If there's an error, show error message instead
   if (error) {
     return (
@@ -40,6 +77,9 @@ const LoadingIndicator = ({ error, retryFn }: {
           <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
             {error.message || "An unknown error occurred"}
           </p>
+          
+          {getErrorGuidance()}
+          
           {retryFn && (
             <button 
               onClick={retryFn}
