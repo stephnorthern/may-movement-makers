@@ -12,7 +12,7 @@ const ACTIVITIES_KEY = "may-movement-activities";
  */
 export const getActivities = async (): Promise<Activity[]> => {
   try {
-    // First, try to get from Supabase
+    // First, try to get from Supabase with sensible limits
     const { data: supabaseActivities, error } = await supabase
       .from('activities')
       .select(`
@@ -23,7 +23,8 @@ export const getActivities = async (): Promise<Activity[]> => {
         date,
         points
       `)
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(100); // Limit to most recent activities for better performance
     
     if (error) {
       console.error("Error fetching from Supabase:", error);
