@@ -19,40 +19,54 @@ export const useParticipantLoadingState = () => {
       try {
         console.log("Checking Supabase connection...");
         
-        // First try a simple query that should always work if the service is up
-        const { data, error } = await supabase
-          .from('teams')
-          .select('count')
-          .limit(1)
-          .timeout(5000); // Add timeout to prevent hanging
+        // Create an AbortController to handle timeout manually
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        if (error) {
-          console.error("Supabase connection error:", error);
+        try {
+          // First try a simple query that should always work if the service is up
+          const { data, error } = await supabase
+            .from('teams')
+            .select('count')
+            .limit(1);
           
-          // More extensive network error detection
-          const errorMessage = error.message.toLowerCase();
-          const isNetworkError = errorMessage.includes('failed to fetch') || 
-                               errorMessage.includes('network') ||
-                               errorMessage.includes('connection') ||
-                               errorMessage.includes('timeout') ||
-                               errorMessage.includes('cors') ||
-                               navigator.onLine === false;
+          clearTimeout(timeoutId);
           
-          setIsConnected(false);
-          
-          if (isNetworkError) {
-            console.log("Network connection issue detected");
-            toast.error("Database connection error: Network connection issue");
-            setLoadError(new Error("Network connectivity issue. Please check your internet connection."));
+          if (error) {
+            console.error("Supabase connection error:", error);
+            
+            // More extensive network error detection
+            const errorMessage = error.message.toLowerCase();
+            const isNetworkError = errorMessage.includes('failed to fetch') || 
+                                errorMessage.includes('network') ||
+                                errorMessage.includes('connection') ||
+                                errorMessage.includes('timeout') ||
+                                errorMessage.includes('cors') ||
+                                navigator.onLine === false;
+            
+            setIsConnected(false);
+            
+            if (isNetworkError) {
+              console.log("Network connection issue detected");
+              toast.error("Database connection error: Network connection issue");
+              setLoadError(new Error("Network connectivity issue. Please check your internet connection."));
+            } else {
+              console.log("Database error detected:", error.message);
+              toast.error(`Database connection error: ${error.message}`);
+              setLoadError(new Error(`Database connection error: ${error.message}`));
+            }
           } else {
-            console.log("Database error detected:", error.message);
-            toast.error(`Database connection error: ${error.message}`);
-            setLoadError(new Error(`Database connection error: ${error.message}`));
+            console.log("Supabase connection successful:", data);
+            setIsConnected(true);
+            setLoadError(null);
           }
-        } else {
-          console.log("Supabase connection successful:", data);
-          setIsConnected(true);
-          setLoadError(null);
+        } catch (abortError) {
+          // Handle timeout or abort
+          clearTimeout(timeoutId);
+          console.error("Connection check timed out");
+          setIsConnected(false);
+          toast.error("Database connection timed out. Please check your network.");
+          setLoadError(new Error("Connection timed out. Please check your network and try again."));
         }
       } catch (err) {
         console.error("Failed to check Supabase connection:", err);
