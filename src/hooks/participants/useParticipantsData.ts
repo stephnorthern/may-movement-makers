@@ -1,4 +1,3 @@
-
 import { useCallback, useState, useRef } from "react";
 import { Participant, Team, Activity } from "@/types";
 import { getParticipants } from "@/lib/api/participants";
@@ -6,6 +5,7 @@ import { getTeams } from "@/lib/api/teams";
 import { getParticipantActivities } from "@/lib/api/activities";
 import { toast } from "sonner";
 import { useParticipantData } from "./useParticipantData";
+import { useParticipantActivities } from "./useParticipantActivities";
 
 /**
  * Hook to handle loading participant data and activities

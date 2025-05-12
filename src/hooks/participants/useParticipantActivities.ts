@@ -15,7 +15,8 @@ export const useParticipantActivities = () => {
         .from('activities')
         .select('*')
         .eq('participant_id', participantId)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(20); // Limit to most recent 20 activities for performance
       
       if (error) {
         console.error(`Error loading activities for participant ${participantId}:`, error);
