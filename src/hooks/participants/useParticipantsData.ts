@@ -1,11 +1,11 @@
-import { useCallback, useState, useRef } from "react";
-import { Participant, Team, Activity } from "@/types";
-import { getParticipants } from "@/lib/api/participants";
-import { getTeams } from "@/lib/api/teams";
-import { getParticipantActivities } from "@/lib/api/activities";
+
+import { useCallback } from "react";
+import { Activity } from "@/types";
 import { toast } from "sonner";
 import { useParticipantData } from "./useParticipantData";
 import { useParticipantActivities } from "./useParticipantActivities";
+import { useDataLoading } from "./useDataLoading";
+import { useLoadingState } from "./useLoadingState";
 
 /**
  * Hook to handle loading participant data and activities
@@ -27,36 +27,23 @@ export const useParticipantsData = () => {
   } = useParticipantData();
 
   const { loadActivitiesForParticipant } = useParticipantActivities();
+  const { loadParticipantsFallback, loadTeamsFallback, loadActivitiesFallback } = useDataLoading();
+  const {
+    isMountedRef,
+    loadFailedRef,
+    initialLoadCompleteRef,
+    startLoading,
+    endLoading,
+    cleanupResources
+  } = useLoadingState(setIsLoading);
   
-  // Ref to track if initial data load has completed
-  const initialLoadCompleteRef = useRef(false);
-  
-  // Ref to track if component is mounted to prevent state updates after unmount
-  const isMountedRef = useRef(true);
-  
-  // Add a ref to track failed loads for retry logic
-  const loadFailedRef = useRef(false);
-  
-  // Add a timeout ref to track loading state and clear stuck states
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  /**
+   * Main data loading function - loads from Supabase with fallbacks to local storage
+   */
   const loadData = useCallback(async () => {
     if (!isMountedRef.current) return;
     
-    setIsLoading(true);
-    
-    // Set a timeout to clear loading state if it gets stuck
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-    
-    // Reset loading state after 10 seconds to prevent stuck loading indicators
-    loadingTimeoutRef.current = setTimeout(() => {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-        console.log("Loading timeout reached - resetting loading state");
-      }
-    }, 10000);
+    startLoading();
     
     try {
       // Load data from Supabase
@@ -103,26 +90,8 @@ export const useParticipantsData = () => {
       setParticipants(sortedData);
       setTeams(teamsData);
       
-      // Load activities for each participant
-      const activitiesMap: Record<string, Activity[]> = {};
-      for (const participant of participantsWithPoints) {
-        if (!isMountedRef.current) return;
-        
-        try {
-          const activities = await loadActivitiesForParticipant(
-            participant.id,
-            participant.name
-          );
-          activitiesMap[participant.id] = activities;
-        } catch (e) {
-          console.error(`Error processing activities for participant ${participant.id}:`, e);
-          activitiesMap[participant.id] = []; // Set empty array when activities fail to load
-        }
-      }
+      await loadParticipantActivities(participantsWithPoints);
       
-      if (!isMountedRef.current) return;
-      
-      setParticipantActivities(activitiesMap);
       initialLoadCompleteRef.current = true;
       loadFailedRef.current = false; // Reset failure flag on success
       
@@ -139,62 +108,10 @@ export const useParticipantsData = () => {
         loadFailedRef.current = true;
       }
       
-      // Fall back to original implementation if Supabase fails
-      try {
-        const participantsData = await getParticipants();
-        const teamsData = await getTeams();
-        
-        if (!isMountedRef.current) return;
-        
-        if (!participantsData || !teamsData) {
-          throw new Error("Failed to load data from fallback");
-        }
-        
-        // Sort by points (highest first)
-        const sortedData = [...participantsData].sort((a, b) => b.points - a.points);
-        setParticipants(sortedData);
-        setTeams(teamsData);
-        
-        // Load activities for each participant
-        const activitiesMap: Record<string, Activity[]> = {};
-        for (const participant of participantsData) {
-          if (!isMountedRef.current) return;
-          
-          try {
-            const activities = await getParticipantActivities(participant.id);
-            activitiesMap[participant.id] = activities;
-          } catch (fallbackActivityError) {
-            console.error(`Error loading activities for participant ${participant.id}:`, fallbackActivityError);
-            activitiesMap[participant.id] = []; // Set empty array when activities fail to load
-          }
-        }
-        
-        if (!isMountedRef.current) return;
-        
-        setParticipantActivities(activitiesMap);
-        initialLoadCompleteRef.current = true;
-        loadFailedRef.current = false; // Reset failure flag on success
-      } catch (fallbackError) {
-        if (!isMountedRef.current) return;
-        
-        console.error("Error in fallback loading:", fallbackError);
-        
-        // Only show toast on first failure to avoid spamming
-        if (!loadFailedRef.current) {
-          toast.error("All data loading methods failed");
-          loadFailedRef.current = true;
-        }
-      }
+      await loadDataFallback();
     } finally {
       if (isMountedRef.current) {
-        // Clear the loading timeout
-        if (loadingTimeoutRef.current) {
-          clearTimeout(loadingTimeoutRef.current);
-          loadingTimeoutRef.current = null;
-        }
-        
-        // Ensure loading state is always turned off
-        setIsLoading(false);
+        endLoading();
       }
     }
   }, [
@@ -202,21 +119,105 @@ export const useParticipantsData = () => {
     loadTeamMembersData, 
     loadTeamsData, 
     loadActivitiesData,
-    loadActivitiesForParticipant,
+    isMountedRef,
     setParticipants,
     setTeams,
-    setParticipantActivities, 
-    setIsLoading
+    loadFailedRef,
+    startLoading,
+    endLoading,
   ]);
-  
-  const cleanupResources = useCallback(() => {
-    isMountedRef.current = false;
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-      loadingTimeoutRef.current = null;
+
+  /**
+   * Load participant activities for all participants
+   */
+  const loadParticipantActivities = useCallback(async (participantsData) => {
+    if (!isMountedRef.current) return;
+    
+    // Load activities for each participant
+    const activitiesMap: Record<string, Activity[]> = {};
+    for (const participant of participantsData) {
+      if (!isMountedRef.current) return;
+      
+      try {
+        const activities = await loadActivitiesForParticipant(
+          participant.id,
+          participant.name
+        );
+        activitiesMap[participant.id] = activities;
+      } catch (e) {
+        console.error(`Error processing activities for participant ${participant.id}:`, e);
+        activitiesMap[participant.id] = []; // Set empty array when activities fail to load
+      }
     }
-  }, []);
+    
+    if (!isMountedRef.current) return;
+    
+    setParticipantActivities(activitiesMap);
+  }, [isMountedRef, loadActivitiesForParticipant, setParticipantActivities]);
   
+  /**
+   * Fallback method to load data from local storage
+   */
+  const loadDataFallback = useCallback(async () => {
+    try {
+      const participantsData = await loadParticipantsFallback();
+      const teamsData = await loadTeamsFallback();
+      
+      if (!isMountedRef.current) return;
+      
+      if (!participantsData || !teamsData) {
+        throw new Error("Failed to load data from fallback");
+      }
+      
+      // Sort by points (highest first)
+      const sortedData = [...participantsData].sort((a, b) => b.points - a.points);
+      setParticipants(sortedData);
+      setTeams(teamsData);
+      
+      // Load activities for each participant
+      const activitiesMap: Record<string, Activity[]> = {};
+      for (const participant of participantsData) {
+        if (!isMountedRef.current) return;
+        
+        try {
+          const activities = await loadActivitiesFallback(participant.id);
+          activitiesMap[participant.id] = activities;
+        } catch (fallbackActivityError) {
+          console.error(
+            `Error loading activities for participant ${participant.id}:`, 
+            fallbackActivityError
+          );
+          activitiesMap[participant.id] = []; // Set empty array when activities fail to load
+        }
+      }
+      
+      if (!isMountedRef.current) return;
+      
+      setParticipantActivities(activitiesMap);
+      initialLoadCompleteRef.current = true;
+      loadFailedRef.current = false; // Reset failure flag on success
+    } catch (fallbackError) {
+      if (!isMountedRef.current) return;
+      
+      console.error("Error in fallback loading:", fallbackError);
+      
+      // Only show toast on first failure to avoid spamming
+      if (!loadFailedRef.current) {
+        toast.error("All data loading methods failed");
+        loadFailedRef.current = true;
+      }
+    }
+  }, [
+    isMountedRef, 
+    loadParticipantsFallback, 
+    loadTeamsFallback, 
+    loadActivitiesFallback,
+    loadFailedRef,
+    setParticipants, 
+    setTeams, 
+    setParticipantActivities
+  ]);
+
   return {
     loadData,
     initialLoadCompleteRef,
