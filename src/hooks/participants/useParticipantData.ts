@@ -19,7 +19,7 @@ export const useParticipantData = () => {
       // Load participants from Supabase
       const { data: participantsData, error: participantsError } = await supabase
         .from('participants')
-        .select('*', options);
+        .select('*');
       
       if (participantsError) {
         console.error("Error loading participants:", participantsError);
@@ -27,7 +27,7 @@ export const useParticipantData = () => {
       }
       
       console.log(`Fetched ${participantsData?.length || 0} participants`);
-      return participantsData;
+      return participantsData || [];
     } catch (error) {
       console.error("Error fetching participants:", error);
       toast.error("Failed to load participants data");
@@ -40,7 +40,7 @@ export const useParticipantData = () => {
       console.log("Fetching team members data from Supabase");
       const { data: teamMembersData, error: teamMembersError } = await supabase
         .from('team_members')
-        .select('*', options);
+        .select('*');
       
       if (teamMembersError) {
         console.error("Error loading team members:", teamMembersError);
@@ -60,7 +60,7 @@ export const useParticipantData = () => {
       console.log("Fetching teams data from Supabase");
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select('*', options);
+        .select('*');
       
       if (teamsError) {
         console.error("Error loading teams:", teamsError);
@@ -84,7 +84,7 @@ export const useParticipantData = () => {
       console.log("Fetching activities data from Supabase");
       const { data: activitiesData, error: activitiesError } = await supabase
         .from('activities')
-        .select('*', options);
+        .select('*');
       
       if (activitiesError) {
         console.error("Error loading activities:", activitiesError);

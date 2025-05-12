@@ -6,7 +6,7 @@ import {
   CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, RefreshCcw, AlertCircle } from "lucide-react";
+import { Plus, RefreshCcw, AlertCircle } from "lucide-react";
 import { useParticipants } from "@/hooks/useParticipants";
 import ParticipantCard from "@/components/participants/ParticipantCard";
 import EmptyParticipantsList from "@/components/participants/EmptyParticipantsList";
@@ -74,6 +74,18 @@ const Participants = () => {
       console.error("Load error details:", loadError);
     }
   }, [isLoading, initialLoadAttempted, participants, teams, loadError]);
+
+  // Force a refresh on initial render
+  useEffect(() => {
+    // Small delay to allow component to mount fully
+    const timer = setTimeout(() => {
+      if (!hasShownData && !refreshing) {
+        handleManualRefresh();
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Render initial loading state
   if (isLoading && !hasShownData) {
@@ -136,7 +148,7 @@ const Participants = () => {
               <AlertCircle className="h-6 w-6" />
               <h3 className="text-lg font-medium">Data Loading Error</h3>
             </div>
-            <p className="mb-4">We encountered a problem loading participant data. This could be due to connectivity issues or database problems.</p>
+            <p className="mb-4">{loadError?.message || "We encountered a problem loading participant data. This could be due to connectivity issues or database problems."}</p>
             <Button 
               variant="outline" 
               className="border-red-300 hover:bg-red-100"
@@ -199,6 +211,7 @@ const Participants = () => {
     );
   }
   
+  // Default render for participants list
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -283,10 +296,10 @@ const Participants = () => {
       />
       
       <TeamAssignmentDialog 
-        teams={teams}
         isOpen={isTeamDialogOpen}
         onOpenChange={setIsTeamDialogOpen}
         selectedParticipant={selectedParticipant}
+        teams={teams}
         onSuccess={() => {
           loadData();
           setSelectedParticipant(null);
