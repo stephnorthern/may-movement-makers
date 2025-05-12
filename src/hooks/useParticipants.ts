@@ -4,8 +4,9 @@ import { useParticipantData } from "./participants/useParticipantData";
 import { useTeamUtils } from "./participants/useTeamUtils";
 import { useRealtimeUpdates } from "./participants/useRealtimeUpdates";
 import { useParticipantsData } from "./participants/useParticipantsData";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useParticipantLoadingState } from "./participants/useParticipantLoadingState";
+import { useParticipantRefresh } from "./participants/useParticipantRefresh";
+import { useParticipantInitialLoad } from "./participants/useParticipantInitialLoad";
 
 /**
  * Main hook for managing participants, their activities, and teams
@@ -19,11 +20,6 @@ export const useParticipants = () => {
     setIsLoading
   } = useParticipantData();
   
-  // Additional state to track if initial loading attempt completed
-  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
-  const [loadError, setLoadError] = useState<Error | null>(null);
-  const [loadAttempts, setLoadAttempts] = useState(0);
-  
   // Load data hook
   const {
     loadData,
@@ -34,109 +30,82 @@ export const useParticipants = () => {
   // Set up realtime updates
   const { isLoadingData } = useRealtimeUpdates(loadData);
 
-  // Verify Supabase connection
+  // Loading state management
+  const {
+    initialLoadAttempted,
+    setInitialLoadAttempted,
+    loadError,
+    setLoadError,
+    loadAttempts,
+    setLoadAttempts
+  } = useParticipantLoadingState();
+  
+  // Refresh management
+  const { refreshing, setRefreshing, retryLoading } = useParticipantRefresh(loadData);
+  
+  // Initialize data loading
+  useParticipantInitialLoad(
+    loadData,
+    setIsLoading,
+    setLoadError,
+    setInitialLoadAttempted,
+    loadAttempts,
+    setLoadAttempts,
+    participants,
+    teams
+  );
+  
+  // Debug information
   useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        console.log("Checking Supabase connection...");
-        const { data, error } = await supabase.from('teams').select('count');
-        
-        if (error) {
-          console.error("Supabase connection error:", error);
-          toast.error(`Database connection error: ${error.message}`);
-          setLoadError(new Error(`Database connection error: ${error.message}`));
-        } else {
-          console.log("Supabase connection successful:", data);
-        }
-      } catch (err) {
-        console.error("Failed to check Supabase connection:", err);
-        toast.error("Failed to connect to database");
-        setLoadError(new Error("Failed to connect to database"));
-      }
-    };
+    console.log("Participants page state:", {
+      isLoading,
+      initialLoadAttempted,
+      participantsCount: participants.length,
+      teamsCount: teams.length,
+      hasError: !!loadError,
+      hasParticipantActivities: Object.keys(participantActivities).length > 0
+    });
     
-    checkConnection();
+    if (loadError) {
+      console.error("Load error details:", loadError);
+    }
+    
+    if (participants.length > 0) {
+      console.log("First participant:", participants[0]);
+    }
+  }, [isLoading, initialLoadAttempted, participants, teams, loadError, participantActivities]);
+  
+  // Force a refresh on initial render
+  useEffect(() => {
+    // Small delay to allow component to mount fully
+    const timer = setTimeout(() => {
+      const hasShownData = participants.length > 0;
+      if (!hasShownData && !refreshing) {
+        handleManualRefresh();
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
   
-  // Load data on initial mount with auto-retry
-  useEffect(() => {
-    console.log("useParticipants effect: Setting up and loading initial data");
-    isMountedRef.current = true;
-    
-    // Initial data load
-    const initialLoad = async () => {
-      try {
-        setIsLoading(true);
-        setLoadError(null);
-        
-        // Force a direct fetch from Supabase instead of relying on cached data
-        const result = await loadData(true);
-        console.log("Initial data loaded successfully, result:", result);
-        console.log("Participants count:", participants.length);
-        console.log("Teams count:", teams.length);
-        
-        if (participants.length > 0 || teams.length > 0) {
-          toast.success("Data loaded successfully");
-        } else {
-          console.log("No data found in database or data not yet in state");
-          // Try loading again if first attempt shows no data, with increasing delay
-          if (loadAttempts < 3) {
-            setLoadAttempts(prev => prev + 1);
-            const retryDelay = loadAttempts === 0 ? 1000 : 3000; // Progressive retry
-            setTimeout(() => {
-              console.log(`Retry attempt ${loadAttempts + 1} after ${retryDelay}ms`);
-              loadData(true);
-            }, retryDelay);
-          }
-        }
-      } catch (error) {
-        console.error("Error during initial data load:", error);
-        setLoadError(error instanceof Error ? error : new Error("Unknown error"));
-        toast.error("Failed to load participant data");
-      } finally {
-        setInitialLoadAttempted(true);
-        setIsLoading(false);
-      }
-    };
-    
-    initialLoad();
-    
-    // Auto refresh after a delay if needed
-    const refreshTimer = setTimeout(() => {
-      if (participants.length === 0 && teams.length === 0) {
-        console.log("No data loaded after initial attempt, trying forced refresh");
-        loadData(true).catch(err => {
-          console.error("Auto-refresh failed:", err);
-        });
-      }
-    }, 5000);
-    
-    // When component unmounts
-    return () => {
-      console.log("useParticipants cleanup");
-      clearTimeout(refreshTimer);
-      cleanupResources();
-    };
-  }, [loadData, isMountedRef, cleanupResources, setIsLoading, participants.length, teams.length, loadAttempts]);
+  // Manual refresh handler
+  const handleManualRefresh = async () => {
+    try {
+      setRefreshing(true);
+      toast.info("Refreshing participant data...");
+      
+      // Use the retry loading function from the hook
+      await retryLoading();
+    } catch (error) {
+      console.error("Manual refresh error:", error);
+      toast.error("Failed to refresh data: " + (error instanceof Error ? error.message : "Unknown error"));
+    } finally {
+      setRefreshing(false);
+    }
+  };
   
   // Team utilities
   const { getTeamById } = useTeamUtils(teams);
-  
-  // Retry loading function for manual refresh
-  const retryLoading = async () => {
-    setLoadError(null);
-    setIsLoading(true);
-    try {
-      await loadData(true);
-      toast.success("Data refreshed successfully");
-    } catch (error) {
-      console.error("Manual retry failed:", error);
-      setLoadError(error instanceof Error ? error : new Error("Failed to load data"));
-      toast.error("Failed to refresh data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return {
     participants,
@@ -147,6 +116,7 @@ export const useParticipants = () => {
     loadError,
     loadData,
     getTeamById,
-    retryLoading // Export the retry function
+    retryLoading,
+    refreshing
   };
 };

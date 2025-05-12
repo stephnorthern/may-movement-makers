@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParticipants } from "@/hooks/useParticipants";
 import { toast } from "sonner";
 
@@ -23,13 +22,13 @@ const Participants = () => {
     loadError,
     loadData,
     getTeamById,
-    retryLoading
+    retryLoading,
+    refreshing
   } = useParticipants();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   
   // Flag to track if we've shown data at least once
   const hasShownData = participants.length > 0;
