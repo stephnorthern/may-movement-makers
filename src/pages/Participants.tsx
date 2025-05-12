@@ -25,7 +25,8 @@ const Participants = () => {
     initialLoadAttempted,
     loadError,
     loadData,
-    getTeamById
+    getTeamById,
+    retryLoading
   } = useParticipants();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -46,12 +47,9 @@ const Participants = () => {
     try {
       setRefreshing(true);
       toast.info("Refreshing participant data...");
-      const success = await loadData(true); // Force fresh data
-      if (success) {
-        toast.success("Data refreshed successfully");
-      } else {
-        toast.error("Failed to refresh data");
-      }
+      
+      // Use the retry loading function from the hook
+      await retryLoading();
     } catch (error) {
       console.error("Manual refresh error:", error);
       toast.error("Failed to refresh data: " + (error instanceof Error ? error.message : "Unknown error"));
@@ -67,13 +65,18 @@ const Participants = () => {
       initialLoadAttempted,
       participantsCount: participants.length,
       teamsCount: teams.length,
-      hasError: !!loadError
+      hasError: !!loadError,
+      hasParticipantActivities: Object.keys(participantActivities).length > 0
     });
     
     if (loadError) {
       console.error("Load error details:", loadError);
     }
-  }, [isLoading, initialLoadAttempted, participants, teams, loadError]);
+    
+    if (participants.length > 0) {
+      console.log("First participant:", participants[0]);
+    }
+  }, [isLoading, initialLoadAttempted, participants, teams, loadError, participantActivities]);
 
   // Force a refresh on initial render
   useEffect(() => {
@@ -82,7 +85,7 @@ const Participants = () => {
       if (!hasShownData && !refreshing) {
         handleManualRefresh();
       }
-    }, 1000);
+    }, 500);
     
     return () => clearTimeout(timer);
   }, []);
@@ -107,7 +110,7 @@ const Participants = () => {
           </Button>
         </div>
         <div className="flex justify-center py-16">
-          <LoadingIndicator />
+          <LoadingIndicator error={loadError} retryFn={handleManualRefresh} />
         </div>
       </div>
     );
@@ -164,7 +167,7 @@ const Participants = () => {
           teams={teams}
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          onSuccess={loadData}
+          onSuccess={() => loadData(true)}
         />
       </div>
     );
@@ -217,7 +220,7 @@ const Participants = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold gradient-text">Participants</h1>
-          <p className="text-gray-600">View and manage all challenge participants</p>
+          <p className="text-gray-600">View and manage all challenge participants ({participants.length})</p>
         </div>
         
         <div className="flex gap-2">
@@ -244,6 +247,16 @@ const Participants = () => {
         <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-sm flex items-center opacity-80 fixed top-4 right-4 shadow-md z-50">
           <div className="mr-2 h-4 w-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
           Refreshing data...
+        </div>
+      )}
+      
+      {/* Show loading indicator while refreshing but with data already displayed */}
+      {isLoading && hasShownData && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 p-3 rounded-md">
+          <div className="flex items-center gap-2">
+            <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-blue-100 rounded-full"></div>
+            <span className="text-sm text-blue-800">Updating data...</span>
+          </div>
         </div>
       )}
       
@@ -292,7 +305,7 @@ const Participants = () => {
         teams={teams}
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onSuccess={loadData}
+        onSuccess={() => loadData(true)}
       />
       
       <TeamAssignmentDialog 
@@ -301,7 +314,7 @@ const Participants = () => {
         selectedParticipant={selectedParticipant}
         teams={teams}
         onSuccess={() => {
-          loadData();
+          loadData(true);
           setSelectedParticipant(null);
         }}
       />

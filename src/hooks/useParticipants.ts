@@ -51,13 +51,14 @@ export const useParticipants = () => {
       } catch (err) {
         console.error("Failed to check Supabase connection:", err);
         toast.error("Failed to connect to database");
+        setLoadError(new Error("Failed to connect to database"));
       }
     };
     
     checkConnection();
   }, []);
   
-  // Load data on initial mount
+  // Load data on initial mount with auto-retry
   useEffect(() => {
     console.log("useParticipants effect: Setting up and loading initial data");
     isMountedRef.current = true;
@@ -77,13 +78,15 @@ export const useParticipants = () => {
         if (participants.length > 0 || teams.length > 0) {
           toast.success("Data loaded successfully");
         } else {
-          console.log("No data found in database");
-          // Try loading again if first attempt shows no data
-          if (loadAttempts < 2) {
+          console.log("No data found in database or data not yet in state");
+          // Try loading again if first attempt shows no data, with increasing delay
+          if (loadAttempts < 3) {
             setLoadAttempts(prev => prev + 1);
+            const retryDelay = loadAttempts === 0 ? 1000 : 3000; // Progressive retry
             setTimeout(() => {
+              console.log(`Retry attempt ${loadAttempts + 1} after ${retryDelay}ms`);
               loadData(true);
-            }, 2000);
+            }, retryDelay);
           }
         }
       } catch (error) {
@@ -98,15 +101,42 @@ export const useParticipants = () => {
     
     initialLoad();
     
+    // Auto refresh after a delay if needed
+    const refreshTimer = setTimeout(() => {
+      if (participants.length === 0 && teams.length === 0) {
+        console.log("No data loaded after initial attempt, trying forced refresh");
+        loadData(true).catch(err => {
+          console.error("Auto-refresh failed:", err);
+        });
+      }
+    }, 5000);
+    
     // When component unmounts
     return () => {
       console.log("useParticipants cleanup");
+      clearTimeout(refreshTimer);
       cleanupResources();
     };
   }, [loadData, isMountedRef, cleanupResources, setIsLoading, participants.length, teams.length, loadAttempts]);
   
   // Team utilities
   const { getTeamById } = useTeamUtils(teams);
+  
+  // Retry loading function for manual refresh
+  const retryLoading = async () => {
+    setLoadError(null);
+    setIsLoading(true);
+    try {
+      await loadData(true);
+      toast.success("Data refreshed successfully");
+    } catch (error) {
+      console.error("Manual retry failed:", error);
+      setLoadError(error instanceof Error ? error : new Error("Failed to load data"));
+      toast.error("Failed to refresh data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return {
     participants,
@@ -116,6 +146,7 @@ export const useParticipants = () => {
     initialLoadAttempted,
     loadError,
     loadData,
-    getTeamById
+    getTeamById,
+    retryLoading // Export the retry function
   };
 };

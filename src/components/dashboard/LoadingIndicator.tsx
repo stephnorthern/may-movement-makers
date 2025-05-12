@@ -1,5 +1,5 @@
 
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const LoadingIndicator = ({ error, retryFn }: { 
@@ -34,14 +34,10 @@ const LoadingIndicator = ({ error, retryFn }: {
       <div className="text-center py-12">
         <div className="inline-flex flex-col items-center">
           <div className="text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <AlertTriangle className="h-12 w-12" />
           </div>
           <p className="text-lg font-medium text-gray-700">Error Loading Data</p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
             {error.message || "An unknown error occurred"}
           </p>
           {retryFn && (

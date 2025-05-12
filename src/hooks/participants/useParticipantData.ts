@@ -31,7 +31,8 @@ export const useParticipantData = () => {
     } catch (error) {
       console.error("Error fetching participants:", error);
       toast.error("Failed to load participants data");
-      throw error;
+      // Always return an empty array instead of throwing to prevent cascade failures
+      return [];
     }
   };
 
@@ -51,6 +52,7 @@ export const useParticipantData = () => {
       return teamMembersData || [];
     } catch (error) {
       console.error("Error fetching team members:", error);
+      // Return empty array instead of throwing
       return [];
     }
   };
@@ -72,10 +74,11 @@ export const useParticipantData = () => {
         id: team.id,
         name: team.name,
         color: team.color
-      }));
+      })) || [];
     } catch (error) {
       console.error("Error fetching teams:", error);
-      throw error;
+      // Return empty array instead of throwing
+      return [];
     }
   };
 
@@ -95,6 +98,7 @@ export const useParticipantData = () => {
       return activitiesData || [];
     } catch (error) {
       console.error("Error fetching activities:", error);
+      // Return empty array instead of throwing
       return [];
     }
   };
