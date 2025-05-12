@@ -23,6 +23,7 @@ const Participants = () => {
     participantActivities,
     isLoading,
     initialLoadAttempted,
+    loadError,
     loadData,
     getTeamById
   } = useParticipants();
@@ -45,11 +46,15 @@ const Participants = () => {
     try {
       setRefreshing(true);
       toast.info("Refreshing participant data...");
-      await loadData();
-      toast.success("Data refreshed successfully");
+      const success = await loadData(true); // Force fresh data
+      if (success) {
+        toast.success("Data refreshed successfully");
+      } else {
+        toast.error("Failed to refresh data");
+      }
     } catch (error) {
       console.error("Manual refresh error:", error);
-      toast.error("Failed to refresh data");
+      toast.error("Failed to refresh data: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
       setRefreshing(false);
     }
@@ -61,9 +66,14 @@ const Participants = () => {
       isLoading,
       initialLoadAttempted,
       participantsCount: participants.length,
-      teamsCount: teams.length
+      teamsCount: teams.length,
+      hasError: !!loadError
     });
-  }, [isLoading, initialLoadAttempted, participants, teams]);
+    
+    if (loadError) {
+      console.error("Load error details:", loadError);
+    }
+  }, [isLoading, initialLoadAttempted, participants, teams, loadError]);
   
   // Render initial loading state
   if (isLoading && !hasShownData) {
@@ -74,6 +84,15 @@ const Participants = () => {
             <h1 className="text-3xl font-bold gradient-text">Participants</h1>
             <p className="text-gray-600">View and manage all challenge participants</p>
           </div>
+          
+          <Button 
+            variant="outline"
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCcw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
         </div>
         <div className="flex justify-center py-16">
           <LoadingIndicator />
@@ -82,7 +101,64 @@ const Participants = () => {
     );
   }
 
-  // Render error state if no data after attempted load
+  // Render error state if loading failed
+  if (loadError && initialLoadAttempted && !hasShownData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">Participants</h1>
+            <p className="text-gray-600">View and manage all challenge participants</p>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCcw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
+            
+            <Button 
+              className="bg-movement-purple hover:bg-movement-dark-purple"
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add Participant
+            </Button>
+          </div>
+        </div>
+        
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <AlertCircle className="h-6 w-6" />
+              <h3 className="text-lg font-medium">Data Loading Error</h3>
+            </div>
+            <p className="mb-4">We encountered a problem loading participant data. This could be due to connectivity issues or database problems.</p>
+            <Button 
+              variant="outline" 
+              className="border-red-300 hover:bg-red-100"
+              onClick={handleManualRefresh}
+            >
+              <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <AddParticipantDialog 
+          teams={teams}
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          onSuccess={loadData}
+        />
+      </div>
+    );
+  }
+
+  // Render empty state if no data after attempted load
   if (showEmptyState && initialLoadAttempted && !isLoading) {
     return (
       <div className="space-y-6">
@@ -175,6 +251,24 @@ const Participants = () => {
               />
             );
           })
+        ) : isLoading ? (
+          // Show skeleton loaders when loading
+          Array.from({ length: 3 }).map((_, index) => (
+            <Card key={`skeleton-${index}`} className="overflow-hidden">
+              <div className="h-2 bg-gray-200" />
+              <div className="p-6">
+                <Skeleton className="h-8 w-3/4 mb-4" />
+                <Skeleton className="h-4 w-1/2 mb-6" />
+                <div className="flex gap-4 mb-6">
+                  <Skeleton className="h-20 flex-1 rounded-lg" />
+                  <Skeleton className="h-20 flex-1 rounded-lg" />
+                </div>
+                <Skeleton className="h-10 w-full mb-6" />
+                <Skeleton className="h-4 w-2/3 mb-2" />
+                <Skeleton className="h-16 w-full rounded-lg" />
+              </div>
+            </Card>
+          ))
         ) : (
           <EmptyParticipantsList onAddParticipant={() => setIsDialogOpen(true)} />
         )}

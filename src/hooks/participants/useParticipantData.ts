@@ -13,36 +13,41 @@ export const useParticipantData = () => {
   const [participantActivities, setParticipantActivities] = useState<Record<string, Activity[]>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadParticipantsData = async () => {
+  const loadParticipantsData = async (options = {}) => {
     try {
+      console.log("Fetching participants data from Supabase");
       // Load participants from Supabase
       const { data: participantsData, error: participantsError } = await supabase
         .from('participants')
-        .select('*');
+        .select('*', options);
       
       if (participantsError) {
         console.error("Error loading participants:", participantsError);
         throw participantsError;
       }
       
+      console.log(`Fetched ${participantsData?.length || 0} participants`);
       return participantsData;
     } catch (error) {
       console.error("Error fetching participants:", error);
       toast.error("Failed to load participants data");
-      return [];
+      throw error;
     }
   };
 
-  const loadTeamMembersData = async () => {
+  const loadTeamMembersData = async (options = {}) => {
     try {
+      console.log("Fetching team members data from Supabase");
       const { data: teamMembersData, error: teamMembersError } = await supabase
         .from('team_members')
-        .select('*');
+        .select('*', options);
       
       if (teamMembersError) {
         console.error("Error loading team members:", teamMembersError);
+        throw teamMembersError;
       }
       
+      console.log(`Fetched ${teamMembersData?.length || 0} team members`);
       return teamMembersData || [];
     } catch (error) {
       console.error("Error fetching team members:", error);
@@ -50,17 +55,19 @@ export const useParticipantData = () => {
     }
   };
 
-  const loadTeamsData = async () => {
+  const loadTeamsData = async (options = {}) => {
     try {
+      console.log("Fetching teams data from Supabase");
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select('*');
+        .select('*', options);
       
       if (teamsError) {
         console.error("Error loading teams:", teamsError);
         throw teamsError;
       }
       
+      console.log(`Fetched ${teamsData?.length || 0} teams`);
       return teamsData.map(team => ({
         id: team.id,
         name: team.name,
@@ -68,20 +75,23 @@ export const useParticipantData = () => {
       }));
     } catch (error) {
       console.error("Error fetching teams:", error);
-      return [];
+      throw error;
     }
   };
 
-  const loadActivitiesData = async () => {
+  const loadActivitiesData = async (options = {}) => {
     try {
+      console.log("Fetching activities data from Supabase");
       const { data: activitiesData, error: activitiesError } = await supabase
         .from('activities')
-        .select('*');
+        .select('*', options);
       
       if (activitiesError) {
         console.error("Error loading activities:", activitiesError);
+        throw activitiesError;
       }
       
+      console.log(`Fetched ${activitiesData?.length || 0} activities`);
       return activitiesData || [];
     } catch (error) {
       console.error("Error fetching activities:", error);

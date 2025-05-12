@@ -39,20 +39,32 @@ export const useParticipantsData = () => {
   
   /**
    * Main data loading function - loads from Supabase with fallbacks to local storage
+   * @param forceFresh - Force a fresh fetch, bypassing any caching
    */
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (forceFresh = false) => {
     if (!isMountedRef.current) return;
     
     startLoading();
+    console.log("Starting data load from Supabase, forceFresh:", forceFresh);
     
     try {
+      // Add cache-busting parameter for Supabase when forceFresh is true
+      const options = forceFresh ? { head: false } : undefined;
+      
       // Load data from Supabase
-      const participantsData = await loadParticipantsData();
-      const teamMembersData = await loadTeamMembersData();
-      const teamsData = await loadTeamsData();
-      const activitiesData = await loadActivitiesData();
+      const participantsData = await loadParticipantsData(options);
+      const teamMembersData = await loadTeamMembersData(options);
+      const teamsData = await loadTeamsData(options);
+      const activitiesData = await loadActivitiesData(options);
       
       if (!isMountedRef.current) return;
+      
+      console.log("Data fetched successfully:", {
+        participantsCount: participantsData?.length || 0,
+        teamMembersCount: teamMembersData?.length || 0,
+        teamsCount: teamsData?.length || 0,
+        activitiesCount: activitiesData?.length || 0
+      });
       
       if (!participantsData || !teamsData) {
         throw new Error("Failed to load essential data");
@@ -87,7 +99,10 @@ export const useParticipantsData = () => {
       
       if (!isMountedRef.current) return;
       
+      console.log("Setting participants data:", sortedData.length);
       setParticipants(sortedData);
+      
+      console.log("Setting teams data:", teamsData.length);
       setTeams(teamsData);
       
       await loadParticipantActivities(participantsWithPoints);
@@ -97,6 +112,7 @@ export const useParticipantsData = () => {
       
       // Loading completed successfully
       console.log("Data loading completed successfully");
+      return true;
     } catch (error) {
       if (!isMountedRef.current) return;
       
@@ -108,7 +124,8 @@ export const useParticipantsData = () => {
         loadFailedRef.current = true;
       }
       
-      await loadDataFallback();
+      const fallbackResult = await loadDataFallback();
+      return fallbackResult;
     } finally {
       if (isMountedRef.current) {
         endLoading();
@@ -160,10 +177,16 @@ export const useParticipantsData = () => {
    */
   const loadDataFallback = useCallback(async () => {
     try {
+      console.log("Attempting fallback data loading method");
       const participantsData = await loadParticipantsFallback();
       const teamsData = await loadTeamsFallback();
       
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) return false;
+      
+      console.log("Fallback data loaded:", {
+        participantsCount: participantsData?.length || 0,
+        teamsCount: teamsData?.length || 0
+      });
       
       if (!participantsData || !teamsData) {
         throw new Error("Failed to load data from fallback");
@@ -177,7 +200,7 @@ export const useParticipantsData = () => {
       // Load activities for each participant
       const activitiesMap: Record<string, Activity[]> = {};
       for (const participant of participantsData) {
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current) return false;
         
         try {
           const activities = await loadActivitiesFallback(participant.id);
@@ -191,13 +214,14 @@ export const useParticipantsData = () => {
         }
       }
       
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) return false;
       
       setParticipantActivities(activitiesMap);
       initialLoadCompleteRef.current = true;
       loadFailedRef.current = false; // Reset failure flag on success
+      return true;
     } catch (fallbackError) {
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) return false;
       
       console.error("Error in fallback loading:", fallbackError);
       
@@ -206,6 +230,7 @@ export const useParticipantsData = () => {
         toast.error("All data loading methods failed");
         loadFailedRef.current = true;
       }
+      return false;
     }
   }, [
     isMountedRef, 

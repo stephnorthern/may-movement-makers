@@ -1,12 +1,15 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
  * Hook for handling realtime updates from Supabase with improved debouncing and error handling
  */
-export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
+export const useRealtimeUpdates = (loadData: (forceFresh?: boolean) => Promise<boolean | void>) => {
+  // Track subscription status
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  
   // Use a ref to track if data loading is already in progress
   const isLoadingRef = useRef(false);
   
@@ -24,6 +27,9 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
   
   // Success tracking to prevent stuck loading states
   const successfulLoadRef = useRef<boolean>(true);
+  
+  // Track connection errors
+  const [connectionError, setConnectionError] = useState<Error | null>(null);
   
   // Function to safely trigger data loading with improved debouncing
   const safeLoadData = (source?: string) => {
@@ -75,6 +81,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     
     try {
       isLoadingRef.current = true;
+      setConnectionError(null);
       
       // If we have pending events, log them
       if (pendingEventsRef.current.size > 0) {
@@ -91,6 +98,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     } catch (error) {
       console.error('Error during realtime data reload:', error);
       successfulLoadRef.current = false;
+      setConnectionError(error instanceof Error ? error : new Error('Unknown error during data load'));
     } finally {
       // Always set loading to false to prevent stuck loading states
       isLoadingRef.current = false;
@@ -122,6 +130,14 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       )
       .subscribe((status) => {
         console.log(`Participants channel status: ${status}`);
+        setSubscriptionStatus(status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to participants table changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Error subscribing to participants table changes');
+          setConnectionError(new Error('Failed to connect to realtime updates'));
+        }
       });
     
     const activitiesChannel = supabase
@@ -175,6 +191,15 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       }
     }, 3000); // Check every 3 seconds
     
+    // Periodically check connection status
+    const connectionCheckTimer = setInterval(() => {
+      if (subscriptionStatus !== 'SUBSCRIBED') {
+        console.log('Checking Supabase connection...');
+        // Force a refresh of data
+        safeLoadData('connection-check');
+      }
+    }, 30000); // Check every 30 seconds
+    
     return () => {
       // Clean up subscriptions and timers
       if (updateTimeoutRef.current) {
@@ -182,6 +207,7 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       }
       
       clearInterval(watchdogTimer);
+      clearInterval(connectionCheckTimer);
       
       supabase.removeChannel(participantsChannel);
       supabase.removeChannel(activitiesChannel);
@@ -190,9 +216,11 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     };
   }, [loadData]);
   
-  // Return the current loading state for external components to use
+  // Return the current loading state and connection status for external components to use
   return {
     isLoadingData: isLoadingRef.current,
-    loadComplete: successfulLoadRef.current
+    loadComplete: successfulLoadRef.current,
+    subscriptionStatus,
+    connectionError
   };
 };

@@ -20,6 +20,7 @@ export const useParticipants = () => {
   
   // Additional state to track if initial loading attempt completed
   const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   
   // Load data hook
   const {
@@ -29,7 +30,7 @@ export const useParticipants = () => {
   } = useParticipantsData();
   
   // Set up realtime updates
-  const { isLoadingData, loadComplete } = useRealtimeUpdates(loadData);
+  const { isLoadingData } = useRealtimeUpdates(loadData);
   
   // Load data on initial mount
   useEffect(() => {
@@ -40,11 +41,22 @@ export const useParticipants = () => {
     const initialLoad = async () => {
       try {
         setIsLoading(true);
-        await loadData();
+        setLoadError(null);
+        
+        // Force a direct fetch from Supabase instead of relying on cached data
+        await loadData(true);
         console.log("Initial data loaded successfully");
-        toast.success("Data loaded successfully");
+        console.log("Participants count:", participants.length);
+        console.log("Teams count:", teams.length);
+        
+        if (participants.length > 0 || teams.length > 0) {
+          toast.success("Data loaded successfully");
+        } else {
+          console.log("No data found in database");
+        }
       } catch (error) {
         console.error("Error during initial data load:", error);
+        setLoadError(error instanceof Error ? error : new Error("Unknown error"));
         toast.error("Failed to load participant data");
       } finally {
         setInitialLoadAttempted(true);
@@ -59,7 +71,7 @@ export const useParticipants = () => {
       console.log("useParticipants cleanup");
       cleanupResources();
     };
-  }, [loadData, isMountedRef, cleanupResources, setIsLoading]);
+  }, [loadData, isMountedRef, cleanupResources, setIsLoading, participants.length, teams.length]);
   
   // Team utilities
   const { getTeamById } = useTeamUtils(teams);
@@ -70,6 +82,7 @@ export const useParticipants = () => {
     participantActivities,
     isLoading: isLoading || isLoadingData,
     initialLoadAttempted,
+    loadError,
     loadData,
     getTeamById
   };
