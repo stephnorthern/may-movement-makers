@@ -1,5 +1,4 @@
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -12,8 +11,8 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
   // Track last update time to prevent too frequent updates
   const lastUpdateTimeRef = useRef(Date.now());
   
-  // Minimum time between updates in milliseconds (500ms debounce - increased from 300ms)
-  const UPDATE_DEBOUNCE_TIME = 500;
+  // Minimum time between updates in milliseconds (1000ms debounce - increased from 500ms)
+  const UPDATE_DEBOUNCE_TIME = 1000;
   
   // Timeout ref for debouncing
   const updateTimeoutRef = useRef<number | null>(null);
@@ -41,8 +40,8 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     if (isLoadingRef.current) {
       // Skip if already loading, but ensure we schedule a follow-up check
       updateTimeoutRef.current = window.setTimeout(() => {
-        // Only reload if we have pending events
-        if (pendingEventsRef.current.size > 0) {
+        // Only reload if we have pending events and not already loading
+        if (pendingEventsRef.current.size > 0 && !isLoadingRef.current) {
           performDataLoad();
         }
       }, UPDATE_DEBOUNCE_TIME);
@@ -88,18 +87,20 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
     } finally {
       isLoadingRef.current = false;
       
-      // If new events came in while we were loading, schedule another load
+      // Check if we need to schedule another update, but with a minimum delay
       if (pendingEventsRef.current.size > 0) {
         updateTimeoutRef.current = window.setTimeout(() => {
-          performDataLoad();
+          if (pendingEventsRef.current.size > 0) {
+            performDataLoad();
+          }
         }, UPDATE_DEBOUNCE_TIME);
       }
     }
   };
 
   useEffect(() => {
-    // Initial load
-    safeLoadData('initial');
+    // Initial load - but don't mark as an event that would trigger further loads
+    performDataLoad();
     
     // Set up Supabase realtime subscriptions with debouncing
     const participantsChannel = supabase
@@ -146,13 +147,6 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       )
       .subscribe();
     
-    // Also listen for storage events as a fallback
-    const handleStorageChange = () => {
-      safeLoadData('storage');
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    
     return () => {
       // Clean up subscriptions and timeout
       if (updateTimeoutRef.current) {
@@ -163,7 +157,6 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       supabase.removeChannel(activitiesChannel);
       supabase.removeChannel(teamsChannel);
       supabase.removeChannel(teamMembersChannel);
-      window.removeEventListener("storage", handleStorageChange);
     };
   }, [loadData]);
 };

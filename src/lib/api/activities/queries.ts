@@ -8,6 +8,7 @@ const ACTIVITIES_KEY = "may-movement-activities";
 
 /**
  * Fetches all activities from Supabase or falls back to local storage
+ * with optimized data handling
  */
 export const getActivities = async (): Promise<Activity[]> => {
   try {
@@ -31,11 +32,11 @@ export const getActivities = async (): Promise<Activity[]> => {
       return localData ? JSON.parse(localData) : [];
     }
 
-    if (!supabaseActivities) {
+    if (!supabaseActivities || supabaseActivities.length === 0) {
       return [];
     }
 
-    // Get participants to map names
+    // Get participants to map names - do this once for all activities
     const participants = await getParticipants();
     const participantsMap = new Map(
       participants.map(p => [p.id, p])
@@ -69,10 +70,11 @@ export const getActivities = async (): Promise<Activity[]> => {
 
 /**
  * Fetches activities for a specific participant
+ * with optimized data handling
  */
 export const getParticipantActivities = async (participantId: string): Promise<Activity[]> => {
   try {
-    // Try to get from Supabase
+    // Try to get from Supabase with optimization - only fetch for this participant
     const { data: supabaseActivities, error } = await supabase
       .from('activities')
       .select(`
@@ -94,15 +96,15 @@ export const getParticipantActivities = async (participantId: string): Promise<A
       return parsedActivities.filter(activity => activity.participantId === participantId);
     }
 
-    if (!supabaseActivities) {
+    if (!supabaseActivities || supabaseActivities.length === 0) {
       return [];
     }
 
-    // Get participants to map names
+    // For a single participant, we only need to look up their name once
     const participants = await getParticipants();
     const participant = participants.find(p => p.id === participantId) || { name: "Unknown" };
 
-    // Map Supabase data to our Activity type
+    // Map Supabase data to our Activity type with minimal processing
     return supabaseActivities.map(a => {
       // Ensure we get the exact date string in YYYY-MM-DD format
       const dateString = a.date ? a.date.split('T')[0] : "";
@@ -111,11 +113,11 @@ export const getParticipantActivities = async (participantId: string): Promise<A
         id: a.id,
         participantId: a.participant_id,
         participantName: participant.name,
-        type: a.description, // Map description to type
+        type: a.description,
         minutes: a.minutes,
         points: a.points || calculatePoints(a.minutes),
-        date: dateString, // Format date correctly without timezone issues
-        notes: ""  // No notes field in our DB yet
+        date: dateString,
+        notes: ""
       };
     });
   } catch (e) {

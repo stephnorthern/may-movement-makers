@@ -13,6 +13,7 @@ import EmptyParticipantsList from "@/components/participants/EmptyParticipantsLi
 import AddParticipantDialog from "@/components/participants/AddParticipantDialog";
 import TeamAssignmentDialog from "@/components/participants/TeamAssignmentDialog";
 import LoadingIndicator from "@/components/dashboard/LoadingIndicator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Participants = () => {
   const {
@@ -33,7 +34,7 @@ const Participants = () => {
     setIsTeamDialogOpen(true);
   };
   
-  // Render loading state more elegantly
+  // Render initial loading state more elegantly
   if (isLoading && participants.length === 0) {
     return (
       <div className="space-y-6">
@@ -66,9 +67,11 @@ const Participants = () => {
         </Button>
       </div>
       
+      {/* Only show loading message on subsequent data refreshes, not initial load */}
       {isLoading && participants.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-md p-3 text-sm">
-          Loading latest data...
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-sm flex items-center">
+          <div className="mr-2 h-4 w-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
+          Refreshing data...
         </div>
       )}
       
