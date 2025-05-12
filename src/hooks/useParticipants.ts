@@ -35,6 +35,9 @@ export const useParticipants = () => {
   // Ref to track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
   
+  // Add a ref to track failed loads for retry logic
+  const loadFailedRef = useRef(false);
+  
   const loadData = useCallback(async () => {
     if (!isMountedRef.current) return;
     
@@ -105,11 +108,17 @@ export const useParticipants = () => {
       
       setParticipantActivities(activitiesMap);
       initialLoadCompleteRef.current = true;
+      loadFailedRef.current = false; // Reset failure flag on success
     } catch (error) {
       if (!isMountedRef.current) return;
       
       console.error("Error loading data:", error);
-      toast.error("Failed to load data, trying fallback method");
+      
+      // Only show toast on first failure to avoid spamming
+      if (!loadFailedRef.current) {
+        toast.error("Failed to load data, trying fallback method");
+        loadFailedRef.current = true;
+      }
       
       // Fall back to original implementation if Supabase fails
       try {
@@ -145,14 +154,21 @@ export const useParticipants = () => {
         
         setParticipantActivities(activitiesMap);
         initialLoadCompleteRef.current = true;
+        loadFailedRef.current = false; // Reset failure flag on success
       } catch (fallbackError) {
         if (!isMountedRef.current) return;
         
         console.error("Error in fallback loading:", fallbackError);
-        toast.error("All data loading methods failed");
+        
+        // Only show toast on first failure to avoid spamming
+        if (!loadFailedRef.current) {
+          toast.error("All data loading methods failed");
+          loadFailedRef.current = true;
+        }
       }
     } finally {
       if (isMountedRef.current) {
+        // Ensure loading state is always turned off
         setIsLoading(false);
       }
     }
@@ -168,18 +184,19 @@ export const useParticipants = () => {
     setIsLoading
   ]);
   
-  // Set up realtime updates
-  useRealtimeUpdates(loadData);
+  // Set up realtime updates with the enhanced hook
+  const realtimeStatus = useRealtimeUpdates(loadData);
   
   // Load data on initial mount
   useEffect(() => {
     isMountedRef.current = true;
+    loadData();
     
     // When component unmounts
     return () => {
       isMountedRef.current = false;
     };
-  }, []);
+  }, [loadData]);
   
   // Team utilities
   const { getTeamById } = useTeamUtils(teams);

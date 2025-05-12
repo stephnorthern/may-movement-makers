@@ -8,7 +8,7 @@ const ACTIVITIES_KEY = "may-movement-activities";
 
 /**
  * Fetches all activities from Supabase or falls back to local storage
- * with optimized data handling
+ * with optimized data handling and improved caching
  */
 export const getActivities = async (): Promise<Activity[]> => {
   try {
@@ -43,11 +43,11 @@ export const getActivities = async (): Promise<Activity[]> => {
     );
 
     // Map Supabase data to our Activity type
-    return supabaseActivities.map(a => {
+    const formattedActivities = supabaseActivities.map(a => {
       const participant = participantsMap.get(a.participant_id) || { name: "Unknown" };
       
       // Ensure we get the exact date string in YYYY-MM-DD format
-      const dateString = a.date ? a.date.split('T')[0] : "";
+      let dateString = a.date ? a.date.split('T')[0] : "";
       
       return {
         id: a.id,
@@ -60,6 +60,15 @@ export const getActivities = async (): Promise<Activity[]> => {
         notes: ""  // No notes field in our DB yet
       };
     });
+    
+    // Cache in localStorage for fallback
+    try {
+      localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(formattedActivities));
+    } catch (storageError) {
+      console.warn("Could not cache activities in localStorage", storageError);
+    }
+    
+    return formattedActivities;
   } catch (e) {
     console.error("Error in getActivities:", e);
     // Fall back to local storage
@@ -107,7 +116,7 @@ export const getParticipantActivities = async (participantId: string): Promise<A
     // Map Supabase data to our Activity type with minimal processing
     return supabaseActivities.map(a => {
       // Ensure we get the exact date string in YYYY-MM-DD format
-      const dateString = a.date ? a.date.split('T')[0] : "";
+      let dateString = a.date ? a.date.split('T')[0] : "";
       
       return {
         id: a.id,

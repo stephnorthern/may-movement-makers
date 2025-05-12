@@ -29,13 +29,16 @@ const Participants = () => {
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   
+  // Flag to track if we've shown data at least once
+  const hasShownData = participants.length > 0;
+  
   const handleTeamDialogOpen = (participant: Participant) => {
     setSelectedParticipant(participant);
     setIsTeamDialogOpen(true);
   };
   
   // Render initial loading state more elegantly
-  if (isLoading && participants.length === 0) {
+  if (isLoading && !hasShownData) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -67,14 +70,15 @@ const Participants = () => {
         </Button>
       </div>
       
-      {/* Only show loading message on subsequent data refreshes, not initial load */}
-      {isLoading && participants.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-sm flex items-center">
+      {/* Show loading message only if we've already shown data before */}
+      {isLoading && hasShownData && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-sm flex items-center opacity-80">
           <div className="mr-2 h-4 w-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
           Refreshing data...
         </div>
       )}
       
+      {/* Show skeletons instead of empty state when loading */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {participants.length > 0 ? (
           participants.map((participant) => {

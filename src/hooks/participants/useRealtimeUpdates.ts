@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,14 +12,17 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
   // Track last update time to prevent too frequent updates
   const lastUpdateTimeRef = useRef(Date.now());
   
-  // Minimum time between updates in milliseconds (1000ms debounce - increased from 500ms)
-  const UPDATE_DEBOUNCE_TIME = 1000;
+  // Minimum time between updates in milliseconds (1500ms debounce - increased from 1000ms)
+  const UPDATE_DEBOUNCE_TIME = 1500;
   
   // Timeout ref for debouncing
   const updateTimeoutRef = useRef<number | null>(null);
   
   // Track events in a batch during debounce period
   const pendingEventsRef = useRef<Set<string>>(new Set());
+  
+  // Success tracking to prevent stuck loading states
+  const successfulLoadRef = useRef<boolean>(true);
   
   // Function to safely trigger data loading with improved debouncing
   const safeLoadData = (source?: string) => {
@@ -82,9 +86,12 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       
       await loadData();
       lastUpdateTimeRef.current = Date.now();
+      successfulLoadRef.current = true;
     } catch (error) {
       console.error('Error during realtime data reload:', error);
+      successfulLoadRef.current = false;
     } finally {
+      // Always set loading to false to prevent stuck loading states
       isLoadingRef.current = false;
       
       // Check if we need to schedule another update, but with a minimum delay
@@ -147,11 +154,25 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       )
       .subscribe();
     
+    // Create a watchdog timer to detect and fix stuck loading states
+    const watchdogTimer = window.setInterval(() => {
+      if (isLoadingRef.current) {
+        const loadingDuration = Date.now() - lastUpdateTimeRef.current;
+        // If loading for over 15 seconds, reset the loading state
+        if (loadingDuration > 15000) {
+          console.warn('Detected stuck loading state, resetting...');
+          isLoadingRef.current = false;
+        }
+      }
+    }, 5000); // Check every 5 seconds
+    
     return () => {
-      // Clean up subscriptions and timeout
+      // Clean up subscriptions and timers
       if (updateTimeoutRef.current) {
         window.clearTimeout(updateTimeoutRef.current);
       }
+      
+      window.clearInterval(watchdogTimer);
       
       supabase.removeChannel(participantsChannel);
       supabase.removeChannel(activitiesChannel);
@@ -159,4 +180,10 @@ export const useRealtimeUpdates = (loadData: () => Promise<void>) => {
       supabase.removeChannel(teamMembersChannel);
     };
   }, [loadData]);
+  
+  // Return the current loading state for external components to use
+  return {
+    isLoadingData: isLoadingRef.current,
+    loadComplete: successfulLoadRef.current
+  };
 };
