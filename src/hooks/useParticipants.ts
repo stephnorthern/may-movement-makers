@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useParticipantData } from "./participants/useParticipantData";
 import { useTeamUtils } from "./participants/useTeamUtils";
 import { useRealtimeUpdates } from "./participants/useRealtimeUpdates";
@@ -117,6 +118,7 @@ export const useParticipants = () => {
     loadData,
     getTeamById,
     retryLoading,
-    refreshing
+    refreshing,
+    handleManualRefresh
   };
 };

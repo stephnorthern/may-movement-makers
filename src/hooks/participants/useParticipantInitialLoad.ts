@@ -37,7 +37,7 @@ export const useParticipantInitialLoad = (
           console.log("No data found in database or data not yet in state");
           // Try loading again if first attempt shows no data, with increasing delay
           if (loadAttempts < 3) {
-            setLoadAttempts(prev => prev + 1);
+            setLoadAttempts(loadAttempts + 1);
             const retryDelay = loadAttempts === 0 ? 1000 : 3000; // Progressive retry
             setTimeout(() => {
               console.log(`Retry attempt ${loadAttempts + 1} after ${retryDelay}ms`);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useParticipants } from "@/hooks/useParticipants";
 import { toast } from "sonner";
 
@@ -23,7 +24,8 @@ const Participants = () => {
     loadData,
     getTeamById,
     retryLoading,
-    refreshing
+    refreshing,
+    handleManualRefresh
   } = useParticipants();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -37,21 +39,6 @@ const Participants = () => {
   const handleTeamDialogOpen = (participant: Participant) => {
     setSelectedParticipant(participant);
     setIsTeamDialogOpen(true);
-  };
-  
-  const handleManualRefresh = async () => {
-    try {
-      setRefreshing(true);
-      toast.info("Refreshing participant data...");
-      
-      // Use the retry loading function from the hook
-      await retryLoading();
-    } catch (error) {
-      console.error("Manual refresh error:", error);
-      toast.error("Failed to refresh data: " + (error instanceof Error ? error.message : "Unknown error"));
-    } finally {
-      setRefreshing(false);
-    }
   };
   
   // Debug information
