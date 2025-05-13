@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
+import { Link, Outlet, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { Calendar, Trophy, Users, Activity, LogOut, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,8 +10,21 @@ import { Badge } from "@/components/ui/badge";
 
 const MainLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, role, signOut, loading } = useAuth();
+  
+  // Protect against unwanted redirects from the Participants page
+  useEffect(() => {
+    // Check if we're coming from participants page based on sessionStorage flag
+    const viewingParticipants = sessionStorage.getItem('viewing_participants') === 'true';
+    
+    // If we're coming from participants page and not explicitly navigating elsewhere
+    if (viewingParticipants && location.pathname !== '/participants' && !location.pathname.startsWith('/participants/')) {
+      console.log("Detected unwanted navigation away from participants page, redirecting back");
+      navigate('/participants', { replace: true });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,12 +45,30 @@ const MainLayout = () => {
     return <Navigate to="/auth" replace state={{ from: location }} />;
   }
 
+  // Special handler for participants page navigation to ensure it stays on the page
+  const handleNavigation = (path) => {
+    if (path === '/participants') {
+      // Clear any previous navigation flags
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('viewing_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      
+      // Set the flag for participants page
+      sessionStorage.setItem('viewing_participants', 'true');
+    } else {
+      // Clear participants flag when navigating elsewhere
+      sessionStorage.removeItem('viewing_participants');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2" onClick={() => handleNavigation('/')}>
             <div className="bg-movement-purple text-white p-1 rounded-lg">
               <Activity className="h-6 w-6" />
             </div>
@@ -54,6 +85,7 @@ const MainLayout = () => {
                   "flex items-center gap-1.5 text-gray-600 hover:text-movement-purple transition-colors",
                   location.pathname === item.path && "text-movement-purple font-medium"
                 )}
+                onClick={() => handleNavigation(item.path)}
               >
                 {item.icon}
                 {item.label}
@@ -110,7 +142,10 @@ const MainLayout = () => {
                     "flex items-center gap-2 p-2 rounded-md text-gray-600 hover:bg-gray-100",
                     location.pathname === item.path && "bg-movement-light-purple text-movement-purple font-medium"
                   )}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleNavigation(item.path);
+                  }}
                 >
                   {item.icon}
                   {item.label}

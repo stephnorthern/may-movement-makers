@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import MainLayout from "./components/MainLayout";
 import Dashboard from "./pages/Dashboard";
@@ -14,7 +14,16 @@ import Calendar from "./pages/Calendar";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Create a stable query client instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 1000 * 30,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -33,6 +42,15 @@ const App = () => (
               <Route path="/participants" element={<Participants />} />
               <Route path="/calendar" element={<Calendar />} />
             </Route>
+            {/* Catch-all route to prevent unwanted redirects from participants page */}
+            <Route 
+              path="/participants-redirect" 
+              element={
+                sessionStorage.getItem('viewing_participants') === 'true'
+                  ? <Navigate to="/participants" replace />
+                  : <Navigate to="/" replace />
+              } 
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

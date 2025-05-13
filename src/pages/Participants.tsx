@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParticipants } from "@/hooks/useParticipants";
 import { toast } from "sonner";
+import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 
 // Components
 import LoadingIndicator from "@/components/dashboard/LoadingIndicator";
@@ -42,6 +43,9 @@ const Participants = () => {
   const hasShownData = participants.length > 0;
   const showEmptyState = !isLoading && initialLoadAttempted && participants.length === 0 && !loadError;
   
+  // Use our navigation guard to prevent unwanted navigation during loading
+  useNavigationGuard('/participants', isLoading || refreshing);
+  
   // Effect to ensure we stay on this page when loading data
   useEffect(() => {
     // This prevents navigation away from the participants page
@@ -51,11 +55,21 @@ const Participants = () => {
       
       // Set a flag in sessionStorage to track that we're on this page intentionally
       sessionStorage.setItem('viewing_participants', 'true');
+      
+      // Clear any pending navigation timeouts
+      const timeoutIds = sessionStorage.getItem('pending_navigation_timeouts');
+      if (timeoutIds) {
+        const ids = JSON.parse(timeoutIds);
+        ids.forEach(id => clearTimeout(id));
+        sessionStorage.removeItem('pending_navigation_timeouts');
+      }
     }
     
     return () => {
-      // Clean up when component unmounts
-      sessionStorage.removeItem('viewing_participants');
+      // Only remove the flag if we're actually navigating away
+      if (location.pathname !== '/participants') {
+        sessionStorage.removeItem('viewing_participants');
+      }
     };
   }, [location.pathname]);
   
@@ -72,6 +86,23 @@ const Participants = () => {
     }
   }, [isLoading, refreshing, hasShownData, initialLoadAttempted]);
 
+  // Add a listener to detect unexpected navigation
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // If the page becomes hidden and we're on the participants page
+      if (document.visibilityState === 'hidden' && location.pathname === '/participants') {
+        // This means the user is navigating away - log this for debugging
+        console.log("Page visibility changed while on participants page");
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [location.pathname]);
+  
   const handleTeamDialogOpen = (participant: Participant) => {
     setSelectedParticipant(participant);
     setIsTeamDialogOpen(true);
