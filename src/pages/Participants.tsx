@@ -14,8 +14,12 @@ import ErrorDisplay from "@/components/participants/ErrorDisplay";
 import { Participant } from "@/types";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Participants = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const {
     participants,
     teams,
@@ -37,6 +41,23 @@ const Participants = () => {
   // Flag to track if we've shown data at least once
   const hasShownData = participants.length > 0;
   const showEmptyState = !isLoading && initialLoadAttempted && participants.length === 0 && !loadError;
+  
+  // Effect to ensure we stay on this page when loading data
+  useEffect(() => {
+    // This prevents navigation away from the participants page
+    // when the component is mounted on the participants route
+    if (location.pathname === '/participants') {
+      console.log("Ensuring we stay on participants page");
+      
+      // Set a flag in sessionStorage to track that we're on this page intentionally
+      sessionStorage.setItem('viewing_participants', 'true');
+    }
+    
+    return () => {
+      // Clean up when component unmounts
+      sessionStorage.removeItem('viewing_participants');
+    };
+  }, [location.pathname]);
   
   // Trigger an initial load if not loading and no data
   useEffect(() => {
