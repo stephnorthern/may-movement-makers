@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { Calendar, Trophy, Users, Activity, LogOut, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,19 +11,33 @@ import { Badge } from "@/components/ui/badge";
 const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const navigationAttemptedRef = useRef(false);
+  const currentPathRef = useRef(location.pathname);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, role, signOut, loading } = useAuth();
   
   // Protect against unwanted redirects from the Participants page
   useEffect(() => {
+    // Track the current path for reference
+    currentPathRef.current = location.pathname;
+    
     // Check if we're coming from participants page based on sessionStorage flag
     const viewingParticipants = sessionStorage.getItem('viewing_participants') === 'true';
     
     // If we're coming from participants page and not explicitly navigating elsewhere
-    if (viewingParticipants && location.pathname !== '/participants' && !location.pathname.startsWith('/participants/')) {
+    // and this is not the initial load but an attempted navigation
+    if (viewingParticipants && 
+        location.pathname !== '/participants' && 
+        !location.pathname.startsWith('/participants/') && 
+        navigationAttemptedRef.current) {
       console.log("Detected unwanted navigation away from participants page, redirecting back");
       navigate('/participants', { replace: true });
+      return;
     }
+    
+    // Set flag to indicate navigation has been attempted
+    navigationAttemptedRef.current = true;
+    
   }, [location, navigate]);
 
   useEffect(() => {
@@ -48,18 +62,24 @@ const MainLayout = () => {
   // Special handler for participants page navigation to ensure it stays on the page
   const handleNavigation = (path) => {
     if (path === '/participants') {
-      // Clear any previous navigation flags
+      // Clear any previous navigation flags except participants
       Object.keys(sessionStorage).forEach(key => {
-        if (key.startsWith('viewing_')) {
+        if (key.startsWith('viewing_') && key !== 'viewing_participants') {
           sessionStorage.removeItem(key);
         }
       });
       
       // Set the flag for participants page
       sessionStorage.setItem('viewing_participants', 'true');
+      
+      console.log("Navigation to participants page, setting viewing flag");
     } else {
-      // Clear participants flag when navigating elsewhere
-      sessionStorage.removeItem('viewing_participants');
+      // Only clear participants flag when explicitly navigating elsewhere
+      // and not when just rendering the layout
+      if (currentPathRef.current === '/participants') {
+        console.log("Explicit navigation away from participants page");
+        sessionStorage.removeItem('viewing_participants');
+      }
     }
   };
 

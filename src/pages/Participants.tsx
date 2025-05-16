@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParticipants } from "@/hooks/useParticipants";
 import { toast } from "sonner";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
@@ -18,6 +17,8 @@ import { RefreshCw } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const Participants = () => {
+  const isMounted = useRef(true);
+  const loadAttemptedRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -38,70 +39,89 @@ const Participants = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [dataAvailable, setDataAvailable] = useState(false);
   
   // Flag to track if we've shown data at least once
   const hasShownData = participants.length > 0;
   const showEmptyState = !isLoading && initialLoadAttempted && participants.length === 0 && !loadError;
   
-  // Use our navigation guard to prevent unwanted navigation during loading
-  useNavigationGuard('/participants', isLoading || refreshing);
-  
-  // Effect to ensure we stay on this page when loading data
+  // Use our navigation guard with relaxed criteria to prevent only during actual loading
+  useNavigationGuard('/participants', (isLoading || refreshing) && !hasShownData);
+
+  // Prevent component from unmounting during critical operations
   useEffect(() => {
-    // This prevents navigation away from the participants page
-    // when the component is mounted on the participants route
+    // Set mounted flag
+    isMounted.current = true;
+    
+    // Ensure we stay on participants page during loading
     if (location.pathname === '/participants') {
-      console.log("Ensuring we stay on participants page");
+      console.log("Mounted on participants page");
       
-      // Set a flag in sessionStorage to track that we're on this page intentionally
+      // Flag that we're viewing this page
       sessionStorage.setItem('viewing_participants', 'true');
       
-      // Clear any pending navigation timeouts
-      const timeoutIds = sessionStorage.getItem('pending_navigation_timeouts');
-      if (timeoutIds) {
-        const ids = JSON.parse(timeoutIds);
-        ids.forEach(id => clearTimeout(id));
-        sessionStorage.removeItem('pending_navigation_timeouts');
+      // If we have never loaded data, try loading immediately
+      if (!loadAttemptedRef.current) {
+        console.log("Initial load on participants page");
+        loadAttemptedRef.current = true;
+        
+        // Small delay to ensure proper rendering
+        const timer = setTimeout(() => {
+          if (isMounted.current) {
+            handleManualRefresh();
+          }
+        }, 100);
+        
+        return () => clearTimeout(timer);
       }
     }
     
     return () => {
-      // Only remove the flag if we're actually navigating away
+      // Only remove viewing flag if we're actually navigating away
       if (location.pathname !== '/participants') {
+        console.log("Unmounting participants page, navigating to:", location.pathname);
         sessionStorage.removeItem('viewing_participants');
       }
+      
+      isMounted.current = false;
     };
   }, [location.pathname]);
   
-  // Trigger an initial load if not loading and no data
+  // Update data availability state
   useEffect(() => {
-    if (!isLoading && !refreshing && !hasShownData && initialLoadAttempted) {
-      // Small delay before trying again
-      const timer = setTimeout(() => {
-        console.log("Triggering refresh after delay - no data shown yet");
-        handleManualRefresh();
-      }, 1000);
-      
-      return () => clearTimeout(timer);
+    if (participants.length > 0) {
+      setDataAvailable(true);
     }
-  }, [isLoading, refreshing, hasShownData, initialLoadAttempted]);
-
-  // Add a listener to detect unexpected navigation
+  }, [participants]);
+  
+  // Detect when data becomes available after loading
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      // If the page becomes hidden and we're on the participants page
-      if (document.visibilityState === 'hidden' && location.pathname === '/participants') {
-        // This means the user is navigating away - log this for debugging
-        console.log("Page visibility changed while on participants page");
+    if (dataAvailable && !isLoading && !refreshing) {
+      console.log("Participants data successfully loaded:", participants.length, "participants");
+    }
+  }, [dataAvailable, isLoading, refreshing, participants.length]);
+
+  // Add a fallback recovery mechanism
+  useEffect(() => {
+    if (loadError && !hasShownData && initialLoadAttempted) {
+      console.log("Attempting recovery after load error");
+      
+      // Try loading from local storage as fallback
+      const cachedData = localStorage.getItem('participants_cache');
+      if (cachedData) {
+        console.log("Found cached participant data, attempting to use it");
+        
+        // Force a refresh to use cached data
+        const timer = setTimeout(() => {
+          if (isMounted.current) {
+            handleManualRefresh();
+          }
+        }, 1000);
+        
+        return () => clearTimeout(timer);
       }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [location.pathname]);
+    }
+  }, [loadError, hasShownData, initialLoadAttempted, handleManualRefresh]);
   
   const handleTeamDialogOpen = (participant: Participant) => {
     setSelectedParticipant(participant);

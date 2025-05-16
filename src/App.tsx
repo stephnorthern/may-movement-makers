@@ -42,7 +42,7 @@ const App = () => (
               <Route path="/participants" element={<Participants />} />
               <Route path="/calendar" element={<Calendar />} />
             </Route>
-            {/* Catch-all route to prevent unwanted redirects from participants page */}
+            {/* Catch-all route for participants page to prevent unwanted redirects */}
             <Route 
               path="/participants-redirect" 
               element={
@@ -50,6 +50,11 @@ const App = () => (
                   ? <Navigate to="/participants" replace />
                   : <Navigate to="/" replace />
               } 
+            />
+            {/* Catch-all route to handle direct navigation to participants without proper initialization */}
+            <Route
+              path="/participants/*"
+              element={<Navigate to="/participants" replace />}
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
