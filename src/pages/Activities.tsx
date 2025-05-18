@@ -33,9 +33,6 @@ const Activities = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
     const { user } = useAuth();
-    useEffect(() => {
-      console.log("USER ID: ", user)
-    },[])
   
   useEffect(() => {
     const loadActivities = async () => {
