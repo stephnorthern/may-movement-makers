@@ -6,6 +6,7 @@ import { getParticipants } from "@/lib/api/participants";
 import { validateField, ValidationError } from "@/utils/formValidation";
 import { Participant } from "@/types";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface ActivityFormData {
   participantId: string;
@@ -20,6 +21,7 @@ export function useActivityForm() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const { user } = useAuth();
   
   // Use the current date but ensure we're using local timezone
   const today = new Date();
@@ -77,12 +79,7 @@ export function useActivityForm() {
   
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Validate the field when selection changes
-    if (name === 'participantId') {
-      const validationError = validateField(value, { required: true }, 'participant');
-      setErrors(prev => ({ ...prev, [name]: validationError }));
-    } else if (name === 'type') {
+    if (name === 'type') {
       const validationError = validateField(value, { required: true }, 'activity type');
       setErrors(prev => ({ ...prev, [name]: validationError }));
     }
@@ -90,7 +87,6 @@ export function useActivityForm() {
   
   const validateForm = (): boolean => {
     const newErrors = {
-      participantId: validateField(formData.participantId, { required: true }, 'participant'),
       type: validateField(formData.type, { required: true }, 'activity type'),
       minutes: validateField(formData.minutes, { required: true, min: 1 }, 'duration'),
       date: validateField(formData.date, { required: true }, 'date')
@@ -113,7 +109,7 @@ export function useActivityForm() {
       setIsSaving(true);
       
       // Find participant's name
-      const participant = participants.find(p => p.id === formData.participantId);
+      const participant = participants.find(p => p.id === user.id);
       if (!participant) {
         toast.error("Invalid participant selected");
         return;
@@ -127,7 +123,7 @@ export function useActivityForm() {
       
       // Add the activity
       await addActivity({
-        participantId: formData.participantId,
+        participantId: user.id,
         participantName: participant.name,
         type: formData.type,
         minutes,
