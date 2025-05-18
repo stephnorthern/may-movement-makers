@@ -128,7 +128,7 @@ const Dashboard = () => {
                   <h2 className="text-2xl font-semibold">Team Standings</h2>
                   <p className="text-gray-600">Track team progress in the challenge</p>
                 </div>
-                <AddTeamDialog onAddTeam={handleAddTeam} teams={teams} />
+                {/* <AddTeamDialog onAddTeam={handleAddTeam} teams={teams} /> */}
               </div>
               
               <ChallengeHeader hasTeams={teams.length > 0} />

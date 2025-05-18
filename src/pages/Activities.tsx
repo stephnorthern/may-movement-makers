@@ -22,11 +22,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Calendar, Plus, UserRound } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { isOwningUser } from "@/lib/utils/auth";
+import { getParticipantFromAuthId } from "@/lib/utils/participants";
+import { useParticipants } from "@/hooks/useParticipants";
 
 const Activities = () => {
+    const { participants } = useParticipants();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+    const { user } = useAuth();
+    useEffect(() => {
+      console.log("USER ID: ", user)
+    },[])
   
   useEffect(() => {
     const loadActivities = async () => {
@@ -91,7 +100,7 @@ const Activities = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold gradient-text">Activities</h1>
-          <p className="text-gray-600">View and manage all logged exercises</p>
+          <p className="text-gray-600">View all logged exercises</p>
         </div>
         <Link to="/activities/new">
           <Button className="bg-movement-green hover:bg-movement-dark-green">
@@ -139,7 +148,9 @@ const Activities = () => {
                           <div className="text-sm text-gray-600 mt-1">{activity.notes}</div>
                         )}
                       </div>
-                      <Button 
+                      {
+                        isOwningUser(activity.participantId, user.id) &&
+                        <Button 
                         variant="ghost" 
                         size="sm" 
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
@@ -147,6 +158,7 @@ const Activities = () => {
                       >
                         Delete
                       </Button>
+                      }
                     </div>
                   ))}
                 </div>

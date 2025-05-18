@@ -41,7 +41,7 @@ const AddParticipantDialog = ({ teams, isOpen, onOpenChange, onSuccess }: AddPar
       return;
     }
     
-    addParticipant({ 
+    addParticipant("1234",{ 
       name: newParticipantName.trim(),
       teamId: newParticipantTeamId && newParticipantTeamId !== "none" ? newParticipantTeamId : undefined
     });

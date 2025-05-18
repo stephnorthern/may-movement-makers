@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Participant, Team, Activity } from "@/types";
-import { getActivities, getParticipantActivities } from "@/lib/api/activities";
+import { getParticipantActivities } from "@/lib/api/activities";
 import { getParticipants } from "@/lib/api/participants";
 import { getTeams } from "@/lib/api/teams";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,7 +74,7 @@ export const useParticipants = () => {
           name: participant.name,
           points: points,
           totalMinutes: participant.total_minutes || 0,
-          teamId: teamMember?.team_id
+          teamId: teamMember?.team_id,
         };
       });
       

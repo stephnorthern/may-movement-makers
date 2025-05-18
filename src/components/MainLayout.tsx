@@ -7,11 +7,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
+import { useParticipants } from "@/hooks/useParticipants";
+import { getParticipantNameFromAuthId } from "@/lib/utils/participants";
 
 const MainLayout = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, role, signOut, loading } = useAuth();
+  const { participants } = useParticipants();
+
 
   useEffect(() => {
     if (!loading && !user) {
@@ -66,7 +70,8 @@ const MainLayout = () => {
             {user && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 hidden md:inline">
-                  {user.email}
+                  {/* {user.email} */}
+                  {getParticipantNameFromAuthId(user.id, participants)}
                 </span>
                 {role === 'admin' && (
                   <Badge variant="secondary" className="mr-2">

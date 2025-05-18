@@ -17,6 +17,7 @@ interface ParticipantCardProps {
 }
 
 const ParticipantCard = ({ participant, activities, team, onTeamChange }: ParticipantCardProps) => {
+  const { user } = useAuth();
   return (
     <Card key={participant.id} className="overflow-hidden">
       {team ? (
@@ -62,7 +63,8 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
               </div>
             </div>
           </div>
-          
+          {isOwningUser(participant.id, user.id) &&
+        
           <div className="flex justify-between items-center">
             <Button
               variant="outline" 
@@ -74,6 +76,7 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
               {participant.teamId ? "Change Team" : "Assign to Team"}
             </Button>
           </div>
+          }
           
           {activities.length > 0 && (
             <div>
@@ -104,5 +107,7 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
 
 // Missing import
 import { Trophy } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { isOwningUser } from "@/lib/utils/auth";
 
 export default ParticipantCard;

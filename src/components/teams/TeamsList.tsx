@@ -48,7 +48,7 @@ const TeamsList = ({
                 )}
                 <CardTitle>{team.name}</CardTitle>
               </div>
-              <div className="flex gap-2">
+              {/* <div className="flex gap-2">
                 <EditTeamDialog team={team} onUpdate={handleUpdateTeam} teams={allTeams} />
                 <Button 
                   variant="outline" 
@@ -58,7 +58,7 @@ const TeamsList = ({
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </div>
+              </div> */}
             </div>
             <CardDescription>
               {team.memberCount} {team.memberCount === 1 ? "member" : "members"}
