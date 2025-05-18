@@ -34,7 +34,7 @@ const TeamsList = ({
   allTeams
 }: TeamsListProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(380px,1fr))]">
       {teams.map((team, index) => (
         <Card key={team.id} className="overflow-hidden">
           <div className="h-2" style={{ backgroundColor: team.color }} />
@@ -48,17 +48,6 @@ const TeamsList = ({
                 )}
                 <CardTitle>{team.name}</CardTitle>
               </div>
-              {/* <div className="flex gap-2">
-                <EditTeamDialog team={team} onUpdate={handleUpdateTeam} teams={allTeams} />
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={() => handleDeleteTeam(team.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div> */}
             </div>
             <CardDescription>
               {team.memberCount} {team.memberCount === 1 ? "member" : "members"}
