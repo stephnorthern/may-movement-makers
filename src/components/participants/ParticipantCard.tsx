@@ -1,4 +1,3 @@
-
 import { Participant, Activity, Team } from "@/types";
 import { 
   Card, 
@@ -7,7 +6,9 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ActivityIcon, Users } from "lucide-react";
+import { Clock, ActivityIcon, Users, Trophy } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { isOwningUser } from "@/lib/local-storage";
 
 interface ParticipantCardProps {
   participant: Participant;
@@ -18,6 +19,66 @@ interface ParticipantCardProps {
 
 const ParticipantCard = ({ participant, activities, team, onTeamChange }: ParticipantCardProps) => {
   const { user } = useAuth();
+  // Sort activities by date (newest first) before rendering
+  const sortedActivities = [...activities].sort((a, b) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
+  // Helper function to format date in a user-friendly way
+  const formatActivityDate = (dateString: string): string => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    
+    // Create a date object that respects the exact date from the string without timezone adjustments
+    const activityDate = new Date(dateString + 'T00:00:00');
+    
+    // Check if date is today
+    if (activityDate.toDateString() === today.toDateString()) {
+      return "Today";
+    }
+    
+    // Check if date is yesterday
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (activityDate.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    }
+    
+    // Otherwise return the date in localized format
+    return activityDate.toLocaleDateString(undefined, { 
+      year: 'numeric',
+      month: 'short', 
+      day: 'numeric'
+    });
+  };
+
+  // Get activities from the last 3 days (including today)
+  const getRecentActivities = () => {
+    const now = new Date();
+    
+    // Set today to the start of the day (midnight)
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    
+    // Calculate two days ago from now
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
+    // Filter activities within the last 3 days
+    const filteredActivities = sortedActivities.filter(activity => {
+      // Create a date object that respects the exact date from the string without timezone adjustments
+      const activityDate = new Date(activity.date + 'T00:00:00');
+      
+      // Include the activity if it's from today or up to 2 days ago
+      return activityDate.getTime() >= twoDaysAgo.getTime();
+    });
+    
+    return filteredActivities;
+  };
+  
+  // Get recent activities (last 3 days including today)
+  const recentActivities = getRecentActivities();
+
   return (
     <Card key={participant.id} className="overflow-hidden">
       {team ? (
@@ -78,25 +139,26 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
           </div>
           }
           
-          {activities.length > 0 && (
+          {recentActivities.length > 0 ? (
             <div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Activities</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Activities (Last 3 Days)</h3>
               <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                {activities
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .slice(0, 3)
-                  .map(activity => (
-                    <div key={activity.id} className="bg-gray-50 p-2 rounded text-sm">
-                      <div className="flex justify-between font-medium">
-                        <span>{activity.type}</span>
-                        <span className="text-movement-purple">+{activity.points} pts</span>
-                      </div>
-                      <div className="text-gray-600 text-xs">
-                        {activity.minutes} min • {new Date(activity.date).toLocaleDateString()}
-                      </div>
+                {recentActivities.map(activity => (
+                  <div key={activity.id} className="bg-gray-50 p-2 rounded text-sm">
+                    <div className="flex justify-between font-medium">
+                      <span>{activity.type}</span>
+                      <span className="text-movement-purple">+{activity.points} pts</span>
                     </div>
-                  ))}
+                    <div className="text-gray-600 text-xs">
+                      {activity.minutes} min • {formatActivityDate(activity.date)}
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 text-sm py-2">
+              No activities in the last 3 days
             </div>
           )}
         </div>
@@ -104,10 +166,5 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
     </Card>
   );
 };
-
-// Missing import
-import { Trophy } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { isOwningUser } from "@/lib/utils/auth";
 
 export default ParticipantCard;
