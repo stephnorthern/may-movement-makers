@@ -39,7 +39,7 @@ const ActivityCalendarSection = ({ activities }: ActivityCalendarSectionProps) =
         </div>
         <CardDescription>Track your exercise days</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 ">
         <Calendar
           mode="single"
           selected={selectedDate}

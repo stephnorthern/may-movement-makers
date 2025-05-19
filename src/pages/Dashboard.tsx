@@ -63,19 +63,16 @@ const Dashboard = () => {
         <LoadingIndicator />
       ) : (
         <>
-          {/* Main dashboard grid with teams and calendar side by side */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* Team Standings Section - Left side (wider) */}
-            <div className="md:col-span-7 space-y-4">
-              <TeamStandingsSection 
-                teams={teams} 
-                participants={participants} 
-                loadData={loadData} 
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 space-y-4">
+              <TeamStandingsSection
+                teams={teams}
+                participants={participants}
+                loadData={loadData}
               />
             </div>
-            
-            {/* Activity Calendar Card - Right side */}
-            <div className="md:w-[360px] w-full shrink-0">
+
+            <div className="w-full md:w-[360px] shrink-0">
               <ActivityCalendarSection activities={activities} />
             </div>
           </div>
