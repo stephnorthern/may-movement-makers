@@ -75,7 +75,7 @@ const Dashboard = () => {
             </div>
             
             {/* Activity Calendar Card - Right side */}
-            <div className="md:col-span-5">
+            <div className="md:w-[360px] w-full shrink-0">
               <ActivityCalendarSection activities={activities} />
             </div>
           </div>

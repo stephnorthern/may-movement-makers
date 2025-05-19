@@ -60,24 +60,33 @@ export const useDataLoadingLogic = (
    * @param forceFresh - Force a fresh fetch, bypassing any caching
    */
   const loadData = useCallback(async (forceFresh = false) => {
-    // Guard against undefined refs
-    if (!isMountedRef?.current || isLoadingRef?.current) return;
+    // Guard against undefined refs and concurrent loads
+    if (!isMountedRef?.current) {
+      console.log("Skipping load - component unmounted");
+      return;
+    }
+    
+    if (isLoadingRef?.current) {
+      console.log("Skipping load - already loading");
+      return;
+    }
     
     try {
       startLoading();
+      isLoadingRef.current = true;
       console.log("Starting data load from Supabase, forceFresh:", forceFresh);
       
       // Load data sequentially
-      const participantsData = await loadParticipantsData();
+      const participantsData = await loadParticipantsData({ forceFresh });
       if (!isMountedRef?.current) return;
       
-      const teamMembersData = await loadTeamMembersData();
+      const teamMembersData = await loadTeamMembersData({ forceFresh });
       if (!isMountedRef?.current) return;
       
-      const teamsData = await loadTeamsData();
+      const teamsData = await loadTeamsData({ forceFresh });
       if (!isMountedRef?.current) return;
       
-      const activitiesData = await loadActivitiesData();
+      const activitiesData = await loadActivitiesData({ forceFresh });
       if (!isMountedRef?.current) return;
       
       console.log("Data fetch results:", {
@@ -100,7 +109,7 @@ export const useDataLoadingLogic = (
         
         if (errors.length > 0) {
           throw new Error("Failed to load essential data: " + 
-            errors.map(e => e instanceof Error ? e.message : String(e)).join(', '));
+            errors.map(e => typeof e === 'object' && e !== null ? e!.toString() : String(e)).join(', '));
         } else {
           throw new Error("Failed to load essential data");
         }
@@ -161,15 +170,14 @@ export const useDataLoadingLogic = (
       return true;
     } catch (error) {
       console.error("Error loading data:", error);
-      
       if (!loadFailedRef.current) {
         toast.error("Failed to load data");
         loadFailedRef.current = true;
       }
-      
       return false;
     } finally {
       if (isMountedRef?.current) {
+        isLoadingRef.current = false;
         endLoading();
       }
     }

@@ -39,15 +39,15 @@ const ActivityCalendarSection = ({ activities }: ActivityCalendarSectionProps) =
         </div>
         <CardDescription>Track your exercise days</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <Calendar 
-          mode="single" 
-          selected={selectedDate} 
-          onSelect={setSelectedDate} 
-          className="rounded-md border" 
+      <CardContent className="space-y-4">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+          className="rounded-md border w-full"
         />
         {selectedDate && (
-          <div className="mt-2 overflow-auto max-h-48">
+          <div className="mt-2 overflow-auto h-full">
             <h4 className="font-semibold">
               Activities for {format(selectedDate, 'MMMM d, yyyy')}
             </h4>

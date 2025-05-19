@@ -1,14 +1,9 @@
 
 import { useState } from "react";
 import { Participant, Team } from "@/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import TeamsList from "@/components/teams/TeamsList";
-import EmptyTeamState from "@/components/teams/EmptyTeamState";
 import TeamMembersView from "@/components/teams/TeamMembersView";
-import AddTeamDialog from "@/components/teams/AddTeamDialog";
 import ChallengeHeader from "@/components/teams/ChallengeHeader";
 
 interface TeamStandingsSectionProps {
@@ -81,7 +76,6 @@ const TeamStandingsSection = ({ teams, participants, loadData }: TeamStandingsSe
           <h2 className="text-2xl font-semibold">Team Standings</h2>
           <p className="text-gray-600">Track team progress in the challenge</p>
         </div>
-        <AddTeamDialog onAddTeam={handleAddTeam} teams={teams} />
       </div>
       
       <ChallengeHeader hasTeams={teams.length > 0} />

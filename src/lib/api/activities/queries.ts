@@ -1,4 +1,3 @@
-
 import { Activity, Participant } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePoints } from "../../utils/calculations";
@@ -21,60 +20,47 @@ export const getActivities = async (): Promise<Activity[]> => {
         description,
         minutes,
         date,
-        points
+        points,
+        participants (
+          id,
+          name
+        )
       `)
       .order('date', { ascending: false })
-      .limit(100); // Limit to most recent activities for better performance
+      .limit(100);
     
     if (error) {
       console.error("Error fetching from Supabase:", error);
-      // Fall back to local storage
       const localData = localStorage.getItem(ACTIVITIES_KEY);
       return localData ? JSON.parse(localData) : [];
     }
 
     if (!supabaseActivities || supabaseActivities.length === 0) {
-      // Cache empty activities to avoid repeated calls
       localStorage.setItem(ACTIVITIES_KEY, JSON.stringify([]));
       return [];
     }
 
-    // Get participants to map names - do this once for all activities
-    const participants = await getParticipants();
-    const participantsMap = new Map(
-      participants.map(p => [p.id, p])
-    );
-
-    // Map Supabase data to our Activity type - improved error handling
+    // Map Supabase data to our Activity type with proper field mapping
     const formattedActivities = supabaseActivities.map(a => {
-      const participant = participantsMap.get(a.participant_id) || { name: "Unknown" };
-      
-      // Ensure we get the exact date string in YYYY-MM-DD format, with null checks
-      let dateString = a.date ? a.date.toString().split('T')[0] : "";
-      
+      // Ensure we get the exact date string in YYYY-MM-DD format
+      const dateString = a.date ? a.date.split('T')[0] : "";
+
       return {
         id: a.id,
         participantId: a.participant_id,
-        participantName: participant.name,
-        type: a.description || "", // Ensure we have a string
-        minutes: a.minutes || 0,  // Ensure we have a number
+        participantName: a.participants?.name || "Unknown",
+        type: a.description || "",
+        minutes: a.minutes || 0,
         points: typeof a.points === 'number' ? a.points : calculatePoints(a.minutes || 0),
         date: dateString,
-        notes: ""  // No notes field in our DB yet
+        notes: ""
       };
     });
     
-    // Cache in localStorage for fallback
-    try {
-      localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(formattedActivities));
-    } catch (storageError) {
-      console.warn("Could not cache activities in localStorage", storageError);
-    }
-    
+    console.log("Formatted activities:", formattedActivities[0]); // Debug log
     return formattedActivities;
   } catch (e) {
     console.error("Error in getActivities:", e);
-    // Fall back to local storage
     const localData = localStorage.getItem(ACTIVITIES_KEY);
     return localData ? JSON.parse(localData) : [];
   }

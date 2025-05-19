@@ -20,26 +20,27 @@ export const useParticipantInitialLoad = (
     let isMounted = true;
     
     const initialLoad = async () => {
-      // Only attempt load if we haven't loaded data yet
+      // If we already have data, just mark as attempted and return
       if (participants.length > 0 || teams.length > 0) {
         setInitialLoadAttempted(true);
         return;
       }
 
+      // If we've hit max attempts, don't try again
       if (loadAttempts >= 3) {
         console.log('Max load attempts reached');
+        setInitialLoadAttempted(true); // Make sure to mark as attempted
         return;
       }
 
       try {
-        setIsLoading(true);
+        // Don't set loading state here, let the loadData function handle it
         setLoadError(null);
         
         await loadData(true);
         
         if (!isMounted) return;
         
-        // Increment attempts but don't trigger retries automatically
         setLoadAttempts(loadAttempts + 1);
       } catch (error) {
         if (!isMounted) return;
@@ -48,15 +49,17 @@ export const useParticipantInitialLoad = (
       } finally {
         if (isMounted) {
           setInitialLoadAttempted(true);
-          setIsLoading(false);
         }
       }
     };
     
-    initialLoad();
+    // Only run initial load if we haven't attempted yet
+    if (!participants.length && !teams.length) {
+      initialLoad();
+    }
     
     return () => {
       isMounted = false;
     };
-  }, [loadData, setIsLoading, setLoadError, setInitialLoadAttempted, loadAttempts]);
+  }, [loadData, setLoadError, setInitialLoadAttempted, loadAttempts]);
 };

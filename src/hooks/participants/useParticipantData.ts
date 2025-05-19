@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Participant, Team, Activity } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,12 +12,20 @@ export const useParticipantData = () => {
   const [participantActivities, setParticipantActivities] = useState<Record<string, Activity[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [lastLoadTime, setLastLoadTime] = useState<number | null>(null);
+  
+  // Add a loading ref to prevent concurrent loads
+  const loadingRef = useRef(false);
 
   const loadParticipantsData = async (options = {}) => {
     try {
+      // Check if we're already loading
+      if (loadingRef.current) {
+        console.log("Already loading participants data");
+        return participants;
+      }
+
       console.log("Fetching participants data from Supabase");
       
-      // Increase cache time to 30 seconds
       const now = Date.now();
       const recentDataAvailable = lastLoadTime && 
                                  (now - lastLoadTime < 30000) && 
@@ -27,6 +35,8 @@ export const useParticipantData = () => {
         console.log("Using cached participants data");
         return participants;
       }
+      
+      loadingRef.current = true;
       
       const { data: participantsData, error: participantsError } = await supabase
         .from('participants')
@@ -39,6 +49,8 @@ export const useParticipantData = () => {
     } catch (error) {
       console.error("Error fetching participants:", error);
       return participants.length > 0 ? participants : [];
+    } finally {
+      loadingRef.current = false;
     }
   };
 

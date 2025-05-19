@@ -141,7 +141,7 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
           
           {recentActivities.length > 0 ? (
             <div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Activities (Last 3 Days)</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-2 ">Recent Activities (Last 3 Days)</h3>
               <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
                 {recentActivities.map(activity => (
                   <div key={activity.id} className="bg-gray-50 p-2 rounded text-sm">

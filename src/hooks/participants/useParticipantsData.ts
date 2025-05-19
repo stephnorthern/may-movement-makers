@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { useParticipantData } from "./useParticipantData";
 import { useParticipantActivities } from "./useParticipantActivities";
@@ -31,6 +30,7 @@ export const useParticipantsData = () => {
     isMountedRef,
     loadFailedRef,
     initialLoadCompleteRef,
+    isLoadingRef,
     startLoading,
     endLoading,
     cleanupResources
@@ -50,7 +50,8 @@ export const useParticipantsData = () => {
     startLoading,
     endLoading,
     loadActivitiesForParticipant,
-    setParticipantActivities
+    setParticipantActivities,
+    isLoadingRef
   );
 
   return {

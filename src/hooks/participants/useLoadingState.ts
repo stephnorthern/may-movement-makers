@@ -23,18 +23,18 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
    * Begin loading process and setup safety timeout
    */
   const startLoading = useCallback(() => {
-    if (!isMountedRef.current || isLoadingRef.current) return; // Prevent concurrent loads
+    if (!isMountedRef.current || isLoadingRef.current) return;
     
     console.log("Starting loading process");
     isLoadingRef.current = true;
     setIsLoading(true);
     
-    // Set a timeout to clear loading state if it gets stuck
+    // Clear any existing timeout
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     
-    // Reset loading state after 10 seconds to prevent stuck loading indicators
+    // Set a new timeout
     loadingTimeoutRef.current = setTimeout(() => {
       if (isMountedRef.current) {
         console.log("Loading timeout reached - resetting loading state");
@@ -50,13 +50,10 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
   const endLoading = useCallback(() => {
     if (isMountedRef.current) {
       console.log("Ending loading process");
-      // Clear the loading timeout
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
       }
-      
-      // Ensure loading state is always turned off
       isLoadingRef.current = false;
       setIsLoading(false);
     }
@@ -72,6 +69,7 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
     }
+    isLoadingRef.current = false;
   }, []);
   
   return {

@@ -15,8 +15,8 @@ export const useRealtimeUpdates = (loadData: (forceFresh?: boolean) => Promise<b
   // Track last update time to prevent too frequent updates
   const lastUpdateTimeRef = useRef(Date.now());
   
-  // Minimum time between updates in milliseconds (3 seconds debounce)
-  const UPDATE_DEBOUNCE_TIME = 3000;
+  // Minimum time between updates in milliseconds (5 seconds debounce)
+  const UPDATE_DEBOUNCE_TIME = 5000;
   
   // Timeout ref for debouncing
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -42,7 +42,9 @@ export const useRealtimeUpdates = (loadData: (forceFresh?: boolean) => Promise<b
 
     try {
       isLoadingRef.current = true;
-      await loadData(true);
+      // Only force fresh if we have pending updates
+      const forceFresh = pendingUpdatesRef.current.size > 0;
+      await loadData(forceFresh);
       lastUpdateTimeRef.current = now;
       pendingUpdatesRef.current.clear();
     } catch (error) {
