@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, ActivityIcon, Users, Trophy } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { isOwningUser } from "@/lib/local-storage";
 
 interface ParticipantCardProps {
   participant: Participant;
@@ -16,6 +18,7 @@ interface ParticipantCardProps {
 }
 
 const ParticipantCard = ({ participant, activities, team, onTeamChange }: ParticipantCardProps) => {
+  const { user } = useAuth();
   // Sort activities by date (newest first) before rendering
   const sortedActivities = [...activities].sort((a, b) => {
     return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -121,7 +124,8 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
               </div>
             </div>
           </div>
-          
+          {isOwningUser(participant.id, user.id) &&
+        
           <div className="flex justify-between items-center">
             <Button
               variant="outline" 
@@ -133,10 +137,11 @@ const ParticipantCard = ({ participant, activities, team, onTeamChange }: Partic
               {participant.teamId ? "Change Team" : "Assign to Team"}
             </Button>
           </div>
+          }
           
           {recentActivities.length > 0 ? (
             <div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Activities (Last 3 Days)</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-2 ">Recent Activities (Last 3 Days)</h3>
               <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
                 {recentActivities.map(activity => (
                   <div key={activity.id} className="bg-gray-50 p-2 rounded text-sm">

@@ -6,10 +6,10 @@ import { PARTICIPANTS_KEY } from "./constants";
 /**
  * Adds a new participant and optionally assigns them to a team
  */
-export const addParticipant = async (participant: { name: string, teamId?: string }): Promise<void> => {
+export const addParticipant = async (id: string, participant: { name: string, teamId?: string }): Promise<void> => {
   try {
     // Generate UUID
-    const id = crypto.randomUUID();
+    // const id = crypto.randomUUID();
     
     // Try to add to Supabase first
     const { error } = await supabase
@@ -17,7 +17,7 @@ export const addParticipant = async (participant: { name: string, teamId?: strin
       .insert({
         id: id,
         name: participant.name,
-        total_minutes: 0
+        total_minutes: 0,
       });
     
     if (error) {
@@ -53,7 +53,7 @@ export const addParticipant = async (participant: { name: string, teamId?: strin
       name: participant.name,
       points: 0,
       totalMinutes: 0,
-      teamId: participant.teamId
+      teamId: participant.teamId,
     };
     
     localStorage.setItem(PARTICIPANTS_KEY, JSON.stringify([...parsedParticipants, newParticipant]));
@@ -99,7 +99,9 @@ export const updateParticipantStatsInSupabase = async (participantId: string, mi
     // Update the participant
     const { error: updateError } = await supabase
       .from('participants')
-      .update({ total_minutes: newTotal })
+      .update({
+        total_minutes: newTotal,
+      })
       .eq('id', participantId);
     
     if (updateError) {

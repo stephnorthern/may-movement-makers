@@ -30,3 +30,12 @@ export {
 
 // Re-export utility functions
 export { calculatePoints } from "./utils/calculations";
+
+export {
+  getParticipantNameFromAuthId,
+  getParticipantFromAuthId,
+} from "./utils/participants";
+
+export {
+  isOwningUser
+} from './utils/auth'

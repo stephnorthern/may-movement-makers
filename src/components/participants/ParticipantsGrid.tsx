@@ -1,4 +1,3 @@
-
 import { Participant, Activity, Team } from "@/types";
 import ParticipantCard from "./ParticipantCard";
 import ParticipantSkeletons from "./ParticipantSkeletons";
@@ -21,28 +20,37 @@ const ParticipantsGrid = ({
   onTeamChange,
   onAddParticipant
 }: ParticipantsGridProps) => {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <ParticipantSkeletons />
+      </div>
+    );
+  }
+
+  if (!participants || participants.length === 0) {
+    return <EmptyParticipantsList onAddParticipant={onAddParticipant} />;
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {participants.length > 0 ? (
-        participants.map((participant) => {
-          const activities = participantActivities[participant.id] || [];
-          const team = getTeamById(participant.teamId);
-          
-          return (
-            <ParticipantCard
-              key={participant.id}
-              participant={participant}
-              activities={activities}
-              team={team}
-              onTeamChange={onTeamChange}
-            />
-          );
-        })
-      ) : isLoading ? (
-        <ParticipantSkeletons />
-      ) : (
-        <EmptyParticipantsList onAddParticipant={onAddParticipant} />
-      )}
+      {participants.map((participant) => {
+        if (!participant?.id) return null;
+        
+        // Safely access activities with fallback
+        const activities = participantActivities?.[participant.id] || [];
+        const team = participant?.teamId ? getTeamById(participant.teamId) : null;
+        
+        return (
+          <ParticipantCard
+            key={participant.id}
+            participant={participant}
+            activities={activities}
+            team={team}
+            onTeamChange={onTeamChange}
+          />
+        );
+      })}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 import { getActivities, deleteActivity } from "@/lib/api/activities";
 import { 
   Card, 
@@ -22,47 +23,73 @@ import {
 import { Button } from "@/components/ui/button";
 import { Calendar, Plus, UserRound } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { isOwningUser } from "@/lib/utils/auth";
+import { getParticipantFromAuthId } from "@/lib/utils/participants";
+import { useParticipants } from "@/hooks/useParticipants";
+import { supabase } from "@/integrations/supabase/client";
 
 const Activities = () => {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { participants } = useParticipants();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { user } = useAuth();
   
-  useEffect(() => {
-    const loadActivities = async () => {
-      setIsLoading(true);
-      try {
-        const data = await getActivities();
-        // Sort by date (newest first)
-        const sortedData = [...data].sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        setActivities(sortedData);
-      } catch (error) {
-        console.error("Error loading activities:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadActivities();
-    
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      loadActivities();
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
+  const { data: rawActivities = [], isLoading } = useQuery({
+    queryKey: ['activities'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('activities')
+        .select(`
+          id,
+          participant_id,
+          description,
+          minutes,
+          date,
+          points,
+          participants (
+            id,
+            name
+          )
+        `)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30000,
+    enabled: !!user
+  });
+
+  // Transform the raw activities into our Activity interface
+  const activities = rawActivities
+    .map(a => ({
+      id: a.id,
+      participantId: a.participant_id,
+      participantName: a.participants?.name || "Unknown",
+      type: a.description || "",
+      minutes: a.minutes || 0,
+      points: a.points || 0,
+      date: a.date.split('T')[0], // Convert to YYYY-MM-DD format
+      notes: ""
+    }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date, newest first
+
+  // Group activities by date - using the original date string to avoid timezone issues
+  const activitiesByDate: Record<string, Activity[]> = {};
+  activities.forEach(activity => {
+    const date = activity.date;
+    if (!activitiesByDate[date]) {
+      activitiesByDate[date] = [];
+    }
+    activitiesByDate[date].push(activity);
+  });
   
   const handleDelete = async (id: string) => {
     try {
       await deleteActivity(id);
-      setActivities(activities.filter(a => a.id !== id));
+      // This is a placeholder implementation. You might want to update the state or use a query to remove the activity
+      // from the list.
+      // setActivities(activities.filter(a => a.id !== id));
       setDeleteId(null);
     } catch (error) {
       console.error("Error deleting activity:", error);
@@ -76,22 +103,12 @@ const Activities = () => {
     return format(date, 'MMMM d, yyyy');
   };
   
-  // Group activities by date - using the original date string to avoid timezone issues
-  const activitiesByDate: Record<string, Activity[]> = {};
-  activities.forEach(activity => {
-    const date = activity.date;
-    if (!activitiesByDate[date]) {
-      activitiesByDate[date] = [];
-    }
-    activitiesByDate[date].push(activity);
-  });
-  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold gradient-text">Activities</h1>
-          <p className="text-gray-600">View and manage all logged exercises</p>
+          <p className="text-gray-600">View all logged exercises</p>
         </div>
         <Link to="/activities/new">
           <Button className="bg-movement-green hover:bg-movement-dark-green">
@@ -139,7 +156,9 @@ const Activities = () => {
                           <div className="text-sm text-gray-600 mt-1">{activity.notes}</div>
                         )}
                       </div>
-                      <Button 
+                      {
+                        isOwningUser(activity.participantId, user.id) &&
+                        <Button 
                         variant="ghost" 
                         size="sm" 
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
@@ -147,6 +166,7 @@ const Activities = () => {
                       >
                         Delete
                       </Button>
+                      }
                     </div>
                   ))}
                 </div>

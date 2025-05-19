@@ -19,7 +19,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface ActivityFormProps {
   formData: ActivityFormData;
   errors: Record<string, ValidationError>;
-  participants: Participant[];
   isSaving: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
@@ -30,7 +29,6 @@ interface ActivityFormProps {
 export const ActivityForm = ({
   formData,
   errors,
-  participants,
   isSaving,
   onSubmit,
   onCancel,
@@ -39,32 +37,7 @@ export const ActivityForm = ({
 }: ActivityFormProps) => {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="participant">Participant</Label>
-        <Select 
-          value={formData.participantId} 
-          onValueChange={(value) => onSelectChange("participantId", value)}
-          disabled={isSaving}
-        >
-          <SelectTrigger id="participant" className={errors.participantId ? "border-red-500" : ""}>
-            <SelectValue placeholder="Select participant" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[200px]">
-            <ScrollArea className="h-[200px]">
-              {participants.map(participant => (
-                <SelectItem key={participant.id} value={participant.id}>
-                  {participant.name}
-                </SelectItem>
-              ))}
-            </ScrollArea>
-          </SelectContent>
-        </Select>
-        {errors.participantId && (
-          <p className="text-sm text-red-500 mt-1">{errors.participantId}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
+       <div className="space-y-2">
         <Label htmlFor="type">Activity Type</Label>
         <Select 
           value={formData.type} 

@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParticipants } from "@/hooks/useParticipants";
-import { toast } from "sonner";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 
 // Components
@@ -25,13 +24,12 @@ const Participants = () => {
   const {
     participants,
     teams,
-    participantActivities,
     isLoading,
     initialLoadAttempted,
+    refreshData: refreshParticipantData,
     loadError,
-    loadData,
+    participantActivities,
     getTeamById,
-    retryLoading,
     refreshing,
     handleManualRefresh
   } = useParticipants();
@@ -128,6 +126,10 @@ const Participants = () => {
     setIsTeamDialogOpen(true);
   };
   
+  const handleRefresh = useCallback(() => {
+    refreshParticipantData();
+  }, [refreshParticipantData]);
+  
   // Render initial loading state
   if (isLoading && !hasShownData) {
     return (
@@ -135,11 +137,11 @@ const Participants = () => {
         <ParticipantsHeader 
           participantsCount={0}
           onOpenAddDialog={() => setIsDialogOpen(true)}
-          onRefresh={handleManualRefresh}
+          onRefresh={handleRefresh}
           refreshing={refreshing}
         />
         <div className="flex justify-center py-16">
-          <LoadingIndicator error={loadError} retryFn={handleManualRefresh} />
+          <LoadingIndicator error={loadError} retryFn={handleRefresh} />
         </div>
       </div>
     );
@@ -152,13 +154,13 @@ const Participants = () => {
         <ParticipantsHeader 
           participantsCount={0}
           onOpenAddDialog={() => setIsDialogOpen(true)}
-          onRefresh={handleManualRefresh}
+          onRefresh={handleRefresh}
           refreshing={refreshing}
         />
         
         <div className="flex justify-center">
           <Button
-            onClick={handleManualRefresh}
+            onClick={handleRefresh}
             variant="outline"
             className="mb-4"
             disabled={refreshing}
@@ -170,16 +172,11 @@ const Participants = () => {
         
         <ErrorDisplay 
           error={loadError} 
-          onRetry={handleManualRefresh}
+          onRetry={handleRefresh}
           refreshing={refreshing}
         />
         
-        <AddParticipantDialog 
-          teams={teams}
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          onSuccess={() => loadData(true)}
-        />
+
       </div>
     );
   }
@@ -191,7 +188,7 @@ const Participants = () => {
         <ParticipantsHeader 
           participantsCount={0}
           onOpenAddDialog={() => setIsDialogOpen(true)}
-          onRefresh={handleManualRefresh}
+          onRefresh={handleRefresh}
           refreshing={refreshing}
         />
         
@@ -204,12 +201,6 @@ const Participants = () => {
           onAddParticipant={() => setIsDialogOpen(true)}
         />
         
-        <AddParticipantDialog 
-          teams={teams}
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          onSuccess={() => loadData(true)}
-        />
       </div>
     );
   }
@@ -220,7 +211,7 @@ const Participants = () => {
       <ParticipantsHeader 
         participantsCount={participants.length}
         onOpenAddDialog={() => setIsDialogOpen(true)}
-        onRefresh={handleManualRefresh}
+        onRefresh={handleRefresh}
         refreshing={refreshing}
       />
       
@@ -235,13 +226,6 @@ const Participants = () => {
         onAddParticipant={() => setIsDialogOpen(true)}
       />
       
-      {/* Dialogs */}
-      <AddParticipantDialog 
-        teams={teams}
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSuccess={() => loadData(true)}
-      />
       
       <TeamAssignmentDialog 
         isOpen={isTeamDialogOpen}
@@ -249,7 +233,7 @@ const Participants = () => {
         selectedParticipant={selectedParticipant}
         teams={teams}
         onSuccess={() => {
-          loadData(true);
+          refreshParticipantData();
           setSelectedParticipant(null);
         }}
       />

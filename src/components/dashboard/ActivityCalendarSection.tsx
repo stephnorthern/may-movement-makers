@@ -20,6 +20,12 @@ const ActivityCalendarSection = ({ activities }: ActivityCalendarSectionProps) =
     ? activities.filter(activity => activity.date === selectedDate.toISOString().split('T')[0]) 
     : [];
 
+  const getShortName = (fullName: string) => {
+    const [first, last] = fullName.trim().split(' ');
+    if (!first) return fullName;
+    return last ? `${first} ${last[0]}.` : first;
+  };
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -33,15 +39,15 @@ const ActivityCalendarSection = ({ activities }: ActivityCalendarSectionProps) =
         </div>
         <CardDescription>Track your exercise days</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <Calendar 
-          mode="single" 
-          selected={selectedDate} 
-          onSelect={setSelectedDate} 
-          className="rounded-md border" 
+      <CardContent className="space-y-4 ">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+          className="rounded-md border w-full"
         />
         {selectedDate && (
-          <div className="mt-2 overflow-auto max-h-48">
+          <div className="mt-2 overflow-auto h-full">
             <h4 className="font-semibold">
               Activities for {format(selectedDate, 'MMMM d, yyyy')}
             </h4>
@@ -51,7 +57,7 @@ const ActivityCalendarSection = ({ activities }: ActivityCalendarSectionProps) =
                   <li key={activity.id} className="mb-1">
                     <div className="flex items-center gap-1">
                       <UserRound className="h-3 w-3 text-movement-green" />
-                      <span className="text-movement-green font-medium">{activity.participantName}</span>
+                      <span className="text-movement-green font-medium">{getShortName(activity.participantName)}</span>
                       <span>•</span>
                       <span>{activity.type} - {activity.minutes} minutes</span>
                     </div>

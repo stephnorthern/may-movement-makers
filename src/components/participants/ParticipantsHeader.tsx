@@ -34,13 +34,7 @@ const ParticipantsHeader = ({
           <RefreshCcw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
         </Button>
-        
-        <Button 
-          className="bg-movement-purple hover:bg-movement-dark-purple"
-          onClick={onOpenAddDialog}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Participant
-        </Button>
+
       </div>
     </div>
   );

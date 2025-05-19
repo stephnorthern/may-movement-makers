@@ -27,7 +27,6 @@ const NewActivity = () => {
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold gradient-text mb-6">Log New Activity</h1>
-      
       <ApiErrorBoundary>
         <Card>
           <CardHeader>
@@ -41,7 +40,6 @@ const NewActivity = () => {
               <ActivityForm
                 formData={formData}
                 errors={errors}
-                participants={participants}
                 isSaving={isSaving}
                 onSubmit={handleSubmit}
                 onCancel={() => navigate("/activities")}

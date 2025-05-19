@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { Calendar, Trophy, Users, Activity, LogOut, Shield } from "lucide-react";
@@ -7,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
+import { useParticipants } from "@/hooks/useParticipants";
+import { getParticipantNameFromAuthId } from "@/lib/utils/participants";
 
 const MainLayout = () => {
   const location = useLocation();
@@ -14,38 +15,66 @@ const MainLayout = () => {
   const navigationAttemptedRef = useRef(false);
   const currentPathRef = useRef(location.pathname);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, role, signOut, loading } = useAuth();
+  const { user, role, signOut, loading: authLoading } = useAuth();
+  const { participants, isLoading: participantsLoading } = useParticipants();
   
-  // Protect against unwanted redirects from the Participants page
+  // Combined loading state
+  const loading = authLoading || participantsLoading;
+
+  // Combined loading state with a minimum duration
+  const [showLoading, setShowLoading] = useState(true);
   useEffect(() => {
-    // Track the current path for reference
+    if (!loading) {
+      // Add a small delay before hiding loading screen to prevent flicker
+      const timer = setTimeout(() => setShowLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  // Move all useEffects to the top level
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
     currentPathRef.current = location.pathname;
-    
-    // Check if we're coming from participants page based on sessionStorage flag
     const viewingParticipants = sessionStorage.getItem('viewing_participants') === 'true';
     
-    // If we're coming from participants page and not explicitly navigating elsewhere
-    // and this is not the initial load but an attempted navigation
     if (viewingParticipants && 
         location.pathname !== '/participants' && 
         !location.pathname.startsWith('/participants/') && 
         navigationAttemptedRef.current) {
-      console.log("Detected unwanted navigation away from participants page, redirecting back");
       navigate('/participants', { replace: true });
       return;
     }
     
-    // Set flag to indicate navigation has been attempted
     navigationAttemptedRef.current = true;
-    
   }, [location, navigate]);
 
   useEffect(() => {
     if (!loading && !user) {
-      // Force redirect if not authenticated
       toast.error("Please sign in to access the application");
     }
   }, [user, loading]);
+
+  // Early return for loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-gray-600">Please wait while we set up your dashboard</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Early return for unauthenticated state
+  if (!user) {
+    return <Navigate to="/auth" replace state={{ from: location }} />;
+  }
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: <Trophy className="h-5 w-5" /> },
@@ -53,11 +82,6 @@ const MainLayout = () => {
     { path: "/participants", label: "Participants", icon: <Users className="h-5 w-5" /> },
     { path: "/calendar", label: "Calendar", icon: <Calendar className="h-5 w-5" /> },
   ];
-
-  // Redirect to auth page if user is not authenticated
-  if (!loading && !user) {
-    return <Navigate to="/auth" replace state={{ from: location }} />;
-  }
 
   // Special handler for participants page navigation to ensure it stays on the page
   const handleNavigation = (path) => {
@@ -118,7 +142,7 @@ const MainLayout = () => {
             {user && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 hidden md:inline">
-                  {user.email}
+                  {loading ? "Loading..." : getParticipantNameFromAuthId(user.id, participants) || user.email}
                 </span>
                 {role === 'admin' && (
                   <Badge variant="secondary" className="mr-2">
