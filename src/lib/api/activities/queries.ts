@@ -57,7 +57,6 @@ export const getActivities = async (): Promise<Activity[]> => {
       };
     });
     
-    console.log("Formatted activities:", formattedActivities[0]); // Debug log
     return formattedActivities;
   } catch (e) {
     console.error("Error in getActivities:", e);
