@@ -1,4 +1,3 @@
-
 import { useRef, useCallback } from "react";
 
 /**
@@ -17,13 +16,17 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
   // Ref to track if initial data load has completed
   const initialLoadCompleteRef = useRef(false);
   
+  // Add this to track loading state
+  const isLoadingRef = useRef(false);
+  
   /**
    * Begin loading process and setup safety timeout
    */
   const startLoading = useCallback(() => {
-    if (!isMountedRef.current) return;
+    if (!isMountedRef.current || isLoadingRef.current) return; // Prevent concurrent loads
     
     console.log("Starting loading process");
+    isLoadingRef.current = true;
     setIsLoading(true);
     
     // Set a timeout to clear loading state if it gets stuck
@@ -35,6 +38,7 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
     loadingTimeoutRef.current = setTimeout(() => {
       if (isMountedRef.current) {
         console.log("Loading timeout reached - resetting loading state");
+        isLoadingRef.current = false;
         setIsLoading(false);
       }
     }, 10000);
@@ -53,6 +57,7 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
       }
       
       // Ensure loading state is always turned off
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   }, [setIsLoading]);
@@ -73,6 +78,7 @@ export const useLoadingState = (setIsLoading: (loading: boolean) => void) => {
     isMountedRef,
     loadFailedRef,
     initialLoadCompleteRef,
+    isLoadingRef, // Export this for external use
     startLoading,
     endLoading,
     cleanupResources
